@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - dev
-
 env:
   app-name: evaluation-rh-api
 
