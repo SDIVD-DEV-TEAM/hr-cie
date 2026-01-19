@@ -50,10 +50,22 @@ check_network() {
     fi
 }
 
+verify_log_dir() {
+    LOG_DIR="/home/debian/hr-project/logs"
+    echo "📁 Verifying log directory: $LOG_DIR"
+    if [ ! -d "$LOG_DIR" ]; then
+        mkdir -p "$LOG_DIR"
+        echo "Created $LOG_DIR"
+    fi
+    # Must be writable by the container user (dctd)
+    chmod 777 "$LOG_DIR" 2>/dev/null || echo "⚠️ Warning: Could not chmod $LOG_DIR. If owned by root, please run 'sudo chmod 777 $LOG_DIR' manually."
+}
+
 echo "🚧 Deploying $CONTAINER_NAME"
 # shellcheck disable=SC2028
 echo "\n\n ------------------------------------ \n\n">> $OUT_FILE
 check_network
+verify_log_dir
 drop_old
 update_app
 clean_docker >>/dev/null
