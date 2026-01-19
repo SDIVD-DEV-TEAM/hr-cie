@@ -1,0 +1,191 @@
+@charset "UTF-8";
+@import url('https://fonts.googleapis.com/css?family=Pacifico|Source+Sans+Pro:400,700');
+@font-face {
+    font-family: "Montserrat";
+    src: url("fonts/Montserrat-Regular.ttf") format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Montserrat";
+    src: url('fonts/Montserrat-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Source Sans';
+    src: url('fonts/SourceSans3-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Source Sans';
+    src: url('fonts/SourceSans3-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@page {
+    margin: 0.5cm 0.5cm 1.5cm;
+    border-bottom: 2px solid #717070;
+    size: A4;
+    @bottom-left {
+        color: #717070;
+        font-family: 'Source Sans', sans-serif;
+        font-size: 7pt;
+        width: 1%;
+    }
+    @bottom-center {
+        color: #717070;
+        content: "Compagnie Ivoirienne d'Electricité \A Siège Social : 1, Avenue Christiani Treichville \A 01 BP 6923 Abidjan 01 - Tel (225) 21 23 23 33 00 - Email : info@cie.ci";
+        font-family: "Montserrat", sans-serif;
+        white-space: pre-wrap;
+        font-size: 7pt;
+        width: 94%;
+    }
+    @bottom-right {
+        width: 1cm;
+        height: 1cm;
+        content: counter(page);
+        background: #FE600F;
+        color: #f6f6f6;
+        text-align: center;
+        font-weight: bold;
+        font-family: "Montserrat", sans-serif;
+    }
+}
+
+html {
+    color: #000;
+    font-family: "Montserrat", sans-serif;
+    font-size: 9pt;
+}
+
+html body {
+    margin: 0;
+}
+
+html table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+html table th {
+    border: 0.6mm solid #000;
+    background-color: #dddddd;
+    color: #000;
+    font-size: 10pt;
+    font-weight: bolder;
+    text-align: center;
+    padding: 9px 0;
+}
+html table td {
+    border: 0.6mm solid #000;
+    text-align: center;
+    font-size: 10px;
+    padding: 9px;
+}
+
+html h1 {
+    color: #fff;
+    font-family: "Montserrat", sans-serif;
+    font-size: 20pt;
+    text-transform: uppercase;
+    text-align: center;
+    font-weight: bold;
+    position: absolute;
+    top: 7%;
+    width: 100%;
+}
+
+html p {
+    font-size: 12pt;
+    text-align: justify;
+    font-weight: bold;
+    font-family: "Montserrat", sans-serif;
+    position: absolute;
+    text-transform: uppercase;
+}
+
+html table td:nth-child(1) {
+    text-align: justify;
+}
+
+html table td:nth-child(2) {
+    text-align: justify;
+}
+
+html table td:nth-child(3) {
+    text-align: center;
+}
+
+html table td:nth-child(4) {
+    text-align: center;
+}
+
+tr:nth-child(odd) {
+    background-color: #c4ead5;
+    color: #000;
+}
+
+.table-title {
+    font-size: 15px;
+    font-weight: bold;
+    text-align: center !important;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    color: #f6f6f6;
+}
+
+.table-total {
+    font-size: 15px;
+    font-weight: bold;
+    text-align: center;
+    color: #707070;
+}
+
+.table-total-label {
+    font-size: 15px;
+    font-weight: bold;
+    text-align: right !important;
+    color: #707070;
+}
+
+.background-image {
+    width: 100%;
+    height: 100%;
+}
+
+.nom {
+    z-index: 2;
+    position: absolute;
+    top: 0.7cm;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 18px;
+}
+
+.matricule {
+    z-index: 2;
+    position: absolute;
+    top: 1.5cm;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 18px;
+}
+
+.note {
+    z-index: 2;
+    position: absolute;
+    top: 0.6cm;
+    left: 81%;
+    width: 15.5%;
+    text-align: center;
+    font-size: 22px;
+    color:#FE600F;
+}

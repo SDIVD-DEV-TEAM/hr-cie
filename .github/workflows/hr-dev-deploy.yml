@@ -1,0 +1,136 @@
+name: CI/CD Spring Boot
+
+on:
+  push:
+    branches:
+      - dev
+
+env:
+  app-name: evaluation-rh-api
+
+jobs:
+  clean-code:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          path: ~/.m2/repository
+
+      - name: Build and test with Maven
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Run the Maven verify phase
+        run: mvn --batch-mode --update-snapshots verify
+      - name: Generate JAR file
+        run: mvn clean install
+      - name: Show elements after build
+        run: ls -la
+      - name: Archive target directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: scripts
+          path: |
+            scripts
+          retention-days: 30
+
+  docker:
+    needs: clean-code
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Caching docker
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.docker
+          key: ${{ runner.os }}-docker-${{ env.cache-name }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Download target directory
+        uses: actions/download-artifact@v4
+        with:
+          name: scripts
+          path: scripts
+
+      - name: Show contents of target directory
+        run: ls -la scripts
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set version from SHA
+        id: set_version
+        run: echo "VERSION=$(echo "${{ github.sha }}" | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        id: docker_build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.app-name }}-develop:${{ env.VERSION }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.app-name }}-develop:${{ env.VERSION }}
+          cache-to: type=inline
+          build-args: |
+            VERSION=${{ env.VERSION }}
+  deploy:
+    needs: docker
+    runs-on: ubuntu-22.04
+    env:
+      chemin: ${{ secrets.DEV_USER }}@${{ secrets.DEV_SERVER }}:/tmp
+    steps:
+      - name: Set version from SHA
+        id: set_version
+        run: echo "VERSION=$(echo "${{ github.sha }}" | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Download target directory
+        uses: actions/download-artifact@v4
+        with:
+          name: scripts
+          path: scripts
+
+      - name: Show contents of target directory
+        run: ls -la scripts
+
+      - name: Deploy to staging server
+        run: |
+          echo "${{ secrets.DEV_PRIVATE_KEY }}" > private_key.pem
+          echo "${{ secrets.DEV_ENV }}" > .env
+          chmod 400 private_key.pem
+          ls -la
+          scp -P ${{ secrets.DEV_SSH_PORT }} -i private_key.pem -o StrictHostKeyChecking=no scripts/deploy.sh ${{ env.chemin }}/deploy_${{ env.app-name }}.sh
+          scp -P ${{ secrets.DEV_SSH_PORT }} -i private_key.pem -o StrictHostKeyChecking=no .env ${{ env.chemin }}/.env_${{ env.app-name }}
+          ssh -p ${{ secrets.DEV_SSH_PORT }} -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.DEV_USER }}@${{ secrets.DEV_SERVER }} <<EOF
+            sh /tmp/deploy_${{ env.app-name }}.sh ${{ env.app-name }} "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.app-name }}-develop:${{ env.VERSION }}" ${{ secrets.DEV_PORT }} hr-network
+            rm /tmp/.env_${{ env.app-name }}
+          EOF

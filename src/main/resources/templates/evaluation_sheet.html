@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta name="viewport" content="width=device-width"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <title>Votre espace Client</title>
+        <link rel="stylesheet" href="css/styles.css" />
+    </head>
+    <body>
+        <div class="header">
+            <img class="background-image" src="images/background-evaluation.png" alt="Image de fond"/>
+            <p class="nom" th:text="${campaign.getAssessed().getFullName()}"></p>
+            <p class="matricule">Matricule : <span style="color:#FE600F" th:text="${campaign.getAssessed().getEmployeeNumber()}">00159Y</span></p>
+            <p class="note" th:text="${campaign.getManagerTemplate() != null ? #numbers.formatDecimal(campaign.getManagerTemplate().note(), 2, 2) : #numbers.formatDecimal(campaign.getExpertTemplate().note(), 2, 2)}"></p>
+        </div>
+
+        <div th:if="${campaign.getManagerTemplate() != null}">
+            <div class="table-section" style="padding-top: 2%">
+                <table class="table">
+                    <thead>
+                    <tr style="background: #fb7632; text-align: center !important;">
+                        <td colspan="3" class="table-title" th:text="${campaign.getManagerTemplate().forms().sectionA().title()}"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 40%;">Titre</th>
+                        <th style="width: 60%;">Description</th>
+                        <th style="width: 10%">Note</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="skill : ${campaign.getManagerTemplate().forms().sectionA().lines()}">
+                        <td th:text="${skill.title()}"></td>
+                        <td th:text="${skill.comments()}"></td>
+                        <td th:text="${#numbers.formatDecimal(skill.note, 2, 2)}"></td>
+                    </tr>
+                    <tr style="background-color: #dddddd !important; color: #000 !important;">
+                        <td colspan="3">Commentaires de la section</td>
+                    </tr>
+                    <tr style="background-color: #ffffff !important;">
+                        <td colspan="3" th:text="${campaign.getManagerTemplate().forms().sectionA().comments()}"></td>
+                    </tr>
+                    <tr style="background-color: #f8d3a3 !important;">
+                        <td colspan="2" class="table-total-label">Moyenne Partielle</td>
+                        <td class="table-total" th:text="${#numbers.formatDecimal(campaign.getManagerTemplate().forms().sectionA().note(), 2, 2)}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-section" style="padding-top: 4%">
+                <table class="table">
+                    <thead>
+                    <tr style="background: #fb7632; text-align: center !important;">
+                        <td colspan="3" class="table-title" th:text="${campaign.getManagerTemplate().forms().sectionB().title()}"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 35%;">Titre</th>
+                        <th style="width: 55%;">Description</th>
+                        <th style="width: 10%">Note</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="skill : ${campaign.getManagerTemplate().forms().sectionB().lines()}">
+                        <td th:text="${skill.title()}"></td>
+                        <td th:text="${skill.comments()}"></td>
+                        <td th:text="${#numbers.formatDecimal(skill.note, 2, 2)}"></td>
+                    </tr>
+                    <tr style="background-color: #dddddd !important; color: #000 !important;">
+                        <td colspan="3" class="table-total-label">Commentaires de la section</td>
+                    </tr>
+                    <tr style="background-color: #ffffff !important;">
+                        <td colspan="3" th:text="${campaign.getManagerTemplate().forms().sectionB().comments()}"></td>
+                    </tr>
+                    <tr style="background-color: #f8d3a3 !important;">
+                        <td colspan="2" class="table-total-label">Moyenne Partielle</td>
+                        <td class="table-total" th:text="${#numbers.formatDecimal(campaign.getManagerTemplate().forms().sectionB().note(), 2, 2)}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-section" style="padding-top: 4%">
+                <table class="table">
+                    <thead>
+                    <tr style="background: #fb7632; text-align: center !important;">
+                        <td colspan="3" class="table-title" th:text="${campaign.getManagerTemplate().forms().sectionC().title()}"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 35%;">Titre</th>
+                        <th style="width: 55%;">Description</th>
+                        <th style="width: 10%">Note</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="skill : ${campaign.getManagerTemplate().forms().sectionC().lines()}">
+                        <td th:text="${skill.title()}"></td>
+                        <td th:text="${skill.comments()}"></td>
+                        <td th:text="${#numbers.formatDecimal(skill.note, 2, 2)}"></td>
+                    </tr>
+                    <tr style="background-color: #dddddd !important; color: #000 !important;">
+                        <td colspan="3" class="table-total-label">Commentaires de la section</td>
+                    </tr>
+                    <tr style="background-color: #ffffff !important;">
+                        <td colspan="3" th:text="${campaign.getManagerTemplate().forms().sectionC().comments()}"></td>
+                    </tr>
+                    <tr style="background-color: #f8d3a3 !important;">
+                        <td colspan="2" class="table-total-label">Moyenne Partielle</td>
+                        <td class="table-total" th:text="${#numbers.formatDecimal(campaign.getManagerTemplate().forms().sectionC().note(), 2, 2)}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-section" style="padding-top: 4%">
+                <table class="table">
+                    <thead>
+                    <tr style="background: #fb7632; text-align: center !important;">
+                        <td colspan="4" class="table-title" th:text="${campaign.getManagerTemplate().forms().sectionD().title()}"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 40%;">Titre</th>
+                        <th style="width: 25%;">Objectif</th>
+                        <th style="width: 25%;">Réalisé</th>
+                        <th style="width: 10%">Note</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="skill : ${campaign.getManagerTemplate().forms().sectionD().lines()}">
+                        <td th:text="${skill.title()}"></td>
+                        <td style="text-align: center !important;" th:text="${skill.objective()+ ' ' + skill.unit()}"></td>
+                        <td th:text="${skill.achieved()+ ' ' + skill.unit()}"></td>
+                        <td th:text="${#numbers.formatDecimal(skill.note, 2, 2)}"></td>
+                    </tr>
+                    <tr style="background-color: #f8d3a3 !important;">
+                        <td colspan="3" class="table-total-label">Moyenne Partielle</td>
+                        <td class="table-total" th:text="${#numbers.formatDecimal(campaign.getManagerTemplate().forms().sectionD().note(), 2, 2)}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-section" style="padding-top: 4%">
+                <table class="table">
+                    <thead>
+                    <tr style="background: #fb7632; text-align: center !important;">
+                        <td colspan="3" class="table-title" th:text="${campaign.getManagerTemplate().forms().sectionE().title()}"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Titre</th>
+                        <th style="width: 30%;">Description</th>
+                        <th style="width: 40%">Proposition</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="proposition : ${campaign.getManagerTemplate().forms().sectionE().lines()}">
+                        <td th:text="${proposition.title()}"></td>
+                        <td th:text="${proposition.proposition_reason()}"></td>
+                        <td th:text="${proposition.proposition_value()}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-section" style="padding-top: 4%">
+                <table class="table">
+                    <thead>
+                    <tr style="background: #fb7632; text-align: center !important;">
+                        <td colspan="5" class="table-title" th:text="${campaign.getManagerTemplate().forms().sectionF().title()}"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 15%;">Titre</th>
+                        <th style="width: 17.5%;">Principales difficultés</th>
+                        <th style="width: 17.5%;">Causes</th>
+                        <th style="width: 25%;">Améliorations envisageables</th>
+                        <th style="width: 25%">Commentaires de l'évaluateur</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="skill, stat  : ${campaign.getManagerTemplate().forms().sectionF().lines()}">
+                        <td th:text="${'Analyse N° ' + (stat.index + 1)}"></td>
+                        <td th:text="${skill.main_difficulty()}"></td>
+                        <td style="text-align: justify !important;" th:text="${skill.reason()}"></td>
+                        <td style="text-align: justify !important;" th:text="${skill.possible_improvements()}"></td>
+                        <td style="text-align: justify !important;" th:text="${skill.manager_comment()}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div th:if="${campaign.getExpertTemplate() != null}">
+            <div class="table-section" style="padding-top: 2%">
+                <table class="table">
+                    <thead>
+                    <tr style="background: #fb7632; text-align: center !important;">
+                        <td colspan="3" class="table-title" th:text="${campaign.getExpertTemplate().forms().sectionA().title()}"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 35%;">Titre</th>
+                        <th style="width: 55%;">Description</th>
+                        <th style="width: 10%">Note</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="skill : ${campaign.getExpertTemplate().forms().sectionA().lines()}">
+                        <td th:text="${skill.title()}"></td>
+                        <td th:text="${skill.comments()}"></td>
+                        <td th:text="${#numbers.formatDecimal(skill.note, 2, 2)}"></td>
+                    </tr>
+                    <tr style="background-color: #dddddd !important; color: #000 !important;">
+                        <td colspan="3" class="table-total-label">Commentaires de la section</td>
+                    </tr>
+                    <tr style="background-color: #ffffff !important;">
+                        <td colspan="3" th:text="${campaign.getExpertTemplate().forms().sectionA().comments()}"></td>
+                    </tr>
+                    <tr style="background-color: #f8d3a3 !important;">
+                        <td colspan="2" class="table-total-label">Moyenne Partielle</td>
+                        <td class="table-total" th:text="${#numbers.formatDecimal(campaign.getExpertTemplate().forms().sectionA().note(), 2, 2)}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-section" style="padding-top: 4%">
+                <table class="table">
+                    <thead>
+                    <tr style="background: #fb7632; text-align: center !important;">
+                        <td colspan="4" class="table-title" th:text="${campaign.getExpertTemplate().forms().sectionB().title()}"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 40%;">Titre</th>
+                        <th style="width: 25%;">Objectif</th>
+                        <th style="width: 25%;">Réalisé</th>
+                        <th style="width: 10%">Note</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="skill : ${campaign.getExpertTemplate().forms().sectionB().lines()}">
+                        <td th:text="${skill.title()}"></td>
+                        <td style="text-align: center !important;" th:text="${skill.objective()+ ' ' + skill.unit()}"></td>
+                        <td th:text="${skill.achieved()+ ' ' + skill.unit()}"></td>
+                        <td th:text="${#numbers.formatDecimal(skill.note, 2, 2)}"></td>
+                    </tr>
+                    <tr style="background-color: #f8d3a3 !important;">
+                        <td colspan="3" class="table-total-label">Moyenne Partielle</td>
+                        <td class="table-total" th:text="${#numbers.formatDecimal(campaign.getExpertTemplate().forms().sectionB().note(), 2, 2)}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-section" style="padding-top: 4%">
+                <table class="table">
+                    <thead>
+                    <tr style="background: #fb7632; text-align: center !important;">
+                        <td colspan="3" class="table-title" th:text="${campaign.getExpertTemplate().forms().sectionC().title()}"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 30%;">Titre</th>
+                        <th style="width: 30%;">Description</th>
+                        <th style="width: 40%">Proposition</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="proposition : ${campaign.getExpertTemplate().forms().sectionC().lines()}">
+                        <td th:text="${proposition.title()}"></td>
+                        <td th:text="${proposition.proposition_reason()}"></td>
+                        <td th:text="${proposition.proposition_value()}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-section" style="padding-top: 4%">
+                <table class="table">
+                    <thead>
+                    <tr style="background: #fb7632; text-align: center !important;">
+                        <td colspan="5" class="table-title" th:text="${campaign.getExpertTemplate().forms().sectionD().title()}"></td>
+                    </tr>
+                    <tr>
+                        <th style="width: 15%;">Titre</th>
+                        <th style="width: 17.5%;">Principales difficultés</th>
+                        <th style="width: 17.5%;">Causes</th>
+                        <th style="width: 25%;">Améliorations envisageables</th>
+                        <th style="width: 25%">Commentaires de l'évaluateur</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="skill, stat  : ${campaign.getExpertTemplate().forms().sectionD().lines()}">
+                        <td th:text="${'Analyse N° ' + (stat.index + 1)}"></td>
+                        <td th:text="${skill.main_difficulty()}"></td>
+                        <td style="text-align: justify !important;" th:text="${skill.reason()}"></td>
+                        <td style="text-align: justify !important;" th:text="${skill.possible_improvements()}"></td>
+                        <td style="text-align: justify !important;" th:text="${skill.manager_comment()}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+</html>

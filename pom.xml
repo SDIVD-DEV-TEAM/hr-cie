@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.4.0</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.cie</groupId>
+	<artifactId>hr</artifactId>
+	<version>${revision}</version>
+	<name>hr</name>
+	<description>Demo project for Spring Boot</description>
+	<properties>
+		<java.version>17</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<springfox.version>2.10.5</springfox.version>
+		<openapi.ui-version>2.7.0</openapi.ui-version>
+		<postgresql.version>42.7.4</postgresql.version>
+		<revision>0.0.0</revision>
+		<sonar.jacoco.itReportPath>${project.basedir}/target/jacoco-it.exec</sonar.jacoco.itReportPath>
+		<sonar.jacoco.reportPaths>${project.basedir}/target/jacoco.exec</sonar.jacoco.reportPaths>
+		<sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+		<sonar.language>java</sonar.language>
+		<maven-pmd.version>3.17.0</maven-pmd.version>
+		<org.mapstruct.version>1.6.0.RC1</org.mapstruct.version>
+		<org.projectlombok.version>1.18.36</org.projectlombok.version>
+		<apache-poi-version>5.3.0</apache-poi-version>
+		<open-pdf-version>9.9.3</open-pdf-version>
+		<libre-pdf-version>2.0.3</libre-pdf-version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>${org.projectlombok.version}</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<artifactId>spring-boot-starter-security</artifactId>
+			<groupId>org.springframework.boot</groupId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-config</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+		<!-- SWAGGER PACKAGE -->
+		<dependency>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<groupId>org.springdoc</groupId>
+			<version>${openapi.ui-version}</version>
+		</dependency>
+
+		<!--JPA Jakarta persistence-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<!-- POSTGRES_SQL -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>${postgresql.version}</version>
+		</dependency>
+
+		<!-- HIBERNATE -->
+		<dependency>
+			<groupId>org.hibernate.validator</groupId>
+			<artifactId>hibernate-validator</artifactId>
+			<version>8.0.1.Final</version>
+		</dependency>
+
+		<!-- JWT Token -->
+		<dependency>
+			<artifactId>java-jwt</artifactId>
+			<groupId>com.auth0</groupId>
+			<version>4.4.0</version>
+		</dependency>
+
+		<dependency>
+			<artifactId>guava</artifactId>
+			<groupId>com.google.guava</groupId>
+			<version>33.3.1-jre</version>
+		</dependency>
+
+		<!-- Mail sender package -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+			<version>3.4.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.hypersistence</groupId>
+			<artifactId>hypersistence-utils-hibernate-62</artifactId>
+			<version>3.8.1</version>
+		</dependency>
+
+		<!-- Gestionnaire de template HTML -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.persistence</groupId>
+			<artifactId>javax.persistence-api</artifactId>
+			<version>2.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>${org.mapstruct.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct-processor</artifactId>
+			<version>${org.mapstruct.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>26.0.1</version>
+        </dependency>
+
+		<!-- Apache POI -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>${apache-poi-version}</version>
+		</dependency>
+
+		<!-- Open PDF -->
+		<dependency>
+			<groupId>org.xhtmlrenderer</groupId>
+			<artifactId>flying-saucer-pdf</artifactId>
+			<version>${open-pdf-version}</version>
+		</dependency>
+
+		<!-- Libre PDF -->
+		<dependency>
+			<groupId>com.github.librepdf</groupId>
+			<artifactId>openpdf</artifactId>
+			<version>${libre-pdf-version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.uuid</groupId>
+			<artifactId>java-uuid-generator</artifactId>
+			<version>5.1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+		</dependency>
+    </dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>add-restdocs</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/classes</outputDirectory>
+							<resources>
+								<resource>
+									<directory>target/generated-snippets</directory>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!--Static analysis of the code management plugins-->
+			<plugin>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<configuration>
+					<configLocation>google_checks.xml</configLocation>
+					<suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
+					<suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<artifactId>checkstyle</artifactId>
+						<groupId>com.puppycrawl.tools</groupId>
+						<version>10.14.1</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<phase>test</phase>
+					</execution>
+				</executions>
+				<groupId>org.apache.maven.plugins</groupId>
+				<version>3.3.1</version>
+			</plugin>
+			<plugin>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+				<configuration>
+					<excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<artifactId>spotbugs</artifactId>
+						<groupId>com.github.spotbugs</groupId>
+						<version>4.8.4</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<phase>verify</phase>
+					</execution>
+				</executions>
+				<groupId>com.github.spotbugs</groupId>
+				<version>4.8.6.0</version>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<configuration>
+					<excludeRoots>
+						<excludeRoot>target/generated-sources</excludeRoot>
+					</excludeRoots>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<phase>verify</phase>
+					</execution>
+				</executions>
+				<groupId>org.apache.maven.plugins</groupId>
+				<version>${maven-pmd.version}</version>
+			</plugin>
+			<!--Static analysis of the code management plugins-->
+
+			<!--Static analysis of the code plugins-->
+			<plugin>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<executions>
+					<!-- Préparer Agent Jacoco -->
+					<execution>
+						<configuration>
+							<append>true</append>
+							<destFile>${sonar.jacoco.reportPaths}</destFile>
+						</configuration>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+						<id>agent-for-ut</id>
+					</execution>
+					<!-- Préparer Agent Integration Jacoco -->
+					<execution>
+						<configuration>
+							<append>true</append>
+							<destFile>${sonar.jacoco.itReportPath}</destFile>
+						</configuration>
+						<goals>
+							<goal>prepare-agent-integration</goal>
+						</goals>
+						<id>agent-for-it</id>
+						<phase>pre-integration-test</phase>
+					</execution>
+					<!-- Effectuer le rapport des tests unitaire -->
+					<execution>
+						<configuration>
+							<dataFile>${sonar.jacoco.reportPaths}</dataFile>
+						</configuration>
+						<goals>
+							<goal>report</goal>
+						</goals>
+						<id>post-unit-test</id>
+						<phase>test</phase>
+					</execution>
+					<!-- Effectuer le rapport des tests unitaire d'intégration -->
+					<execution>
+						<configuration>
+							<dataFile>${sonar.jacoco.itReportPath}</dataFile>
+						</configuration>
+						<goals>
+							<goal>report-integration</goal>
+						</goals>
+						<id>post-integration-test</id>
+						<phase>verify</phase>
+					</execution>
+					<!-- Effectuer l'agrégation des rapports des tests unitaires-->
+					<execution>
+						<goals>
+							<goal>report-aggregate</goal>
+						</goals>
+						<id>aggregate-test</id>
+						<phase>test</phase>
+					</execution>
+					<!-- Effectuer l'agrégation des rapports des tests d'intégration-->
+					<execution>
+						<goals>
+							<goal>report-aggregate</goal>
+						</goals>
+						<id>aggregate-integration-test</id>
+						<phase>verify</phase>
+					</execution>
+				</executions>
+				<groupId>org.jacoco</groupId>
+				<version>0.8.12</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.13.0</version>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${org.projectlombok.version}</version>
+						</path>
+						<path>
+							<groupId>org.mapstruct</groupId>
+							<artifactId>mapstruct-processor</artifactId>
+							<version>${org.mapstruct.version}</version>
+						</path>
+					</annotationProcessorPaths>
+					<annotationProcessors>
+						<!-- if lombok is not first then mapstruct doesn't find getters/setters -->
+						<annotationProcessor>lombok.launch.AnnotationProcessorHider$AnnotationProcessor</annotationProcessor>
+						<annotationProcessor>org.mapstruct.ap.MappingProcessor</annotationProcessor>
+					</annotationProcessors>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
