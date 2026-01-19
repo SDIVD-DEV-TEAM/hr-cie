@@ -11,7 +11,7 @@ LABEL author="Sminth"
 
 # Install libfreetype6
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends curl=7.88.1-10+deb12u8 libfreetype6=2.12.1+dfsg-5+deb12u3 fontconfig=2.14.1-4 fonts-dejavu-core=2.37-6 \
+RUN apt-get update && apt-get install -y --no-install-recommends curl libfreetype6 fontconfig fonts-dejavu-core \
     && apt-get clean &&  rm -rf /var/lib/apt/lists/*
 
 # Create the debian user
