@@ -107,7 +107,7 @@ jobs:
     needs: docker
     runs-on: ubuntu-22.04
     env:
-      chemin: ${{ secrets.DEV_USER }}@${{ secrets.DEV_SERVER }}:/tmp
+      chemin: /tmp
     steps:
       - name: Set version from SHA
         id: set_version
