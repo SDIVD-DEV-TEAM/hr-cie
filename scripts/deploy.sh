@@ -40,9 +40,20 @@ clean_docker() {
     echo "After image prune force"
 }
 
+check_network() {
+    echo "🌐 Checking network '$NETWORK'..."
+    if [ ! "$(docker network ls -q -f name="$NETWORK")" ]; then
+        echo "Creating network '$NETWORK'..."
+        docker network create "$NETWORK" >> $OUT_FILE
+    else
+        echo "Network '$NETWORK' exists."
+    fi
+}
+
 echo "🚧 Deploying $CONTAINER_NAME"
 # shellcheck disable=SC2028
 echo "\n\n ------------------------------------ \n\n">> $OUT_FILE
+check_network
 drop_old
 update_app
 clean_docker >>/dev/null
