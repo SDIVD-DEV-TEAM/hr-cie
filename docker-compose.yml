@@ -10,7 +10,7 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_GENERATE_DDL=true
     ports:
-      - "8080:8080"
+      - "8090:8090"
     links:
       - "db:db"
   db:

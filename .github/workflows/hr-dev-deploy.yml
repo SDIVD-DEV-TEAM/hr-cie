@@ -122,15 +122,36 @@ jobs:
       - name: Show contents of target directory
         run: ls -la scripts
 
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEV_SERVER }}
+          username: ${{ secrets.DEV_USER }}
+          password: ${{ secrets.DEV_PASSWORD }}
+          port: ${{ secrets.DEV_SSH_PORT }}
+          source: "scripts/deploy.sh"
+          target: ${{ env.chemin }}
+
+      - name: Create .env on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEV_SERVER }}
+          username: ${{ secrets.DEV_USER }}
+          password: ${{ secrets.DEV_PASSWORD }}
+          port: ${{ secrets.DEV_SSH_PORT }}
+          script: |
+             echo "${{ secrets.DEV_ENV }}" > ${{ env.chemin }}/.env_${{ env.app-name }}
+
       - name: Deploy to staging server
-        run: |
-          echo "${{ secrets.DEV_PRIVATE_KEY }}" > private_key.pem
-          echo "${{ secrets.DEV_ENV }}" > .env
-          chmod 400 private_key.pem
-          ls -la
-          scp -P ${{ secrets.DEV_SSH_PORT }} -i private_key.pem -o StrictHostKeyChecking=no scripts/deploy.sh ${{ env.chemin }}/deploy_${{ env.app-name }}.sh
-          scp -P ${{ secrets.DEV_SSH_PORT }} -i private_key.pem -o StrictHostKeyChecking=no .env ${{ env.chemin }}/.env_${{ env.app-name }}
-          ssh -p ${{ secrets.DEV_SSH_PORT }} -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.DEV_USER }}@${{ secrets.DEV_SERVER }} <<EOF
-            sh /tmp/deploy_${{ env.app-name }}.sh ${{ env.app-name }} "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.app-name }}-develop:${{ env.VERSION }}" ${{ secrets.DEV_PORT }} hr-network
-            rm /tmp/.env_${{ env.app-name }}
-          EOF
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEV_SERVER }}
+          username: ${{ secrets.DEV_USER }}
+          password: ${{ secrets.DEV_PASSWORD }}
+          port: ${{ secrets.DEV_SSH_PORT }}
+          script: |
+            mv ${{ env.chemin }}/scripts/deploy.sh ${{ env.chemin }}/deploy_${{ env.app-name }}.sh
+            rm -rf ${{ env.chemin }}/scripts
+            chmod +x ${{ env.chemin }}/deploy_${{ env.app-name }}.sh
+            sh ${{ env.chemin }}/deploy_${{ env.app-name }}.sh ${{ env.app-name }} "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.app-name }}-develop:${{ env.VERSION }}" ${{ secrets.DEV_PORT }} hr-network
+            rm ${{ env.chemin }}/.env_${{ env.app-name }}
