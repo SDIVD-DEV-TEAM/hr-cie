@@ -37,9 +37,9 @@ import static org.springframework.http.HttpMethod.*;
 @RequiredArgsConstructor
 public class SecurityConfiguration {
 
-    protected final String[] PUBLIC_URLS = {"/actuator/**", "/public", "/configuration/**",
+    protected final String[] PUBLIC_URLS = { "/actuator/**", "/public", "/configuration/**",
             "/authenticate", "/swagger-resources/**", "/api/authentication/sign-in/**", "/api/authentication/update/**",
-            "/api/authentication/refresh-token/**", "/swagger-ui/**", "/v3/api-docs/**"};
+            "/api/authentication/refresh-token/**", "/swagger-ui/**", "/v3/api-docs/**" };
 
     private final JwtAuthorizationFilter jwtAuthorizationFilter;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
@@ -55,21 +55,21 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth.requestMatchers(PUBLIC_URLS).permitAll())
                 .exceptionHandling(auth -> auth
                         .accessDeniedHandler(jwtAccessDeniedHandler)
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                )
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.requestMatchers(GET, "/api/employee").hasAnyAuthority("Employé RH", "Employé RH & User"))
-                .authorizeHttpRequests(auth -> auth.requestMatchers(POST, "/api/employee").hasAnyAuthority("Employé RH", "Employé RH & User"))
-                .authorizeHttpRequests(auth -> auth.requestMatchers(PUT, "/api/employee").hasAnyAuthority("Employé RH", "Employé RH & User"))
+                .authorizeHttpRequests(auth -> auth.requestMatchers(GET, "/api/employee").hasAnyAuthority("Employé RH",
+                        "Employé RH & User"))
+                .authorizeHttpRequests(auth -> auth.requestMatchers(POST, "/api/employee").hasAnyAuthority("Employé RH",
+                        "Employé RH & User"))
+                .authorizeHttpRequests(auth -> auth.requestMatchers(PUT, "/api/employee").hasAnyAuthority("Employé RH",
+                        "Employé RH & User"))
                 .addFilterAfter(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-                .logout(auth ->
-                        auth.logoutUrl("/api/logout")
-                                .logoutSuccessHandler((request, response, authentication) -> SecurityContextHolder.clearContext())
-                );
+                .logout(auth -> auth.logoutUrl("/api/logout")
+                        .logoutSuccessHandler(
+                                (request, response, authentication) -> SecurityContextHolder.clearContext()));
         return http.build();
     }
-
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -83,6 +83,18 @@ public class SecurityConfiguration {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
+        configuration.setAllowedOriginPatterns(java.util.Collections.singletonList("*"));
+        configuration.setAllowedMethods(java.util.Collections.singletonList("*"));
+        configuration.setAllowedHeaders(java.util.Collections.singletonList("*"));
+        configuration.setAllowCredentials(true);
+        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
