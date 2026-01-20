@@ -1,5 +1,15 @@
 package com.cie.hr.infrastructure.service.query;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import com.cie.hr.infrastructure.entity.EmployeeEntity;
 import com.cie.hr.infrastructure.entity.JobEntity;
 import com.cie.hr.infrastructure.entity.OrganizationEntity;
@@ -9,16 +19,13 @@ import com.cie.hr.infrastructure.repository.GradeJpaRepository;
 import com.cie.hr.infrastructure.repository.JobJpaRepository;
 import com.cie.hr.infrastructure.repository.OrganizationJpaRepository;
 import com.cie.hr.infrastructure.repository.ScorecardJpaRepository;
-import com.cie.hr.infrastructure.service.viewmodel.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.cie.hr.infrastructure.service.viewmodel.JobWithEmployeeInfoVm;
+import com.cie.hr.infrastructure.service.viewmodel.OrganizationCompleteVM;
+import com.cie.hr.infrastructure.service.viewmodel.OrganizationHierarchicalVm;
+import com.cie.hr.infrastructure.service.viewmodel.OrganizationLightVm;
+import com.cie.hr.infrastructure.service.viewmodel.OrganizationListDetails;
+import com.cie.hr.infrastructure.service.viewmodel.OrganizationListVm;
+import com.cie.hr.infrastructure.service.viewmodel.OrganizationVm;
 
 /**
  * @author Koty BLEU
@@ -179,7 +186,10 @@ public class OrganizationQuery {
             allOrganizationUnder.forEach(org -> {
                 var findDirection = organizationJpaRepository.findByParentIdAndTypeNameIn(org.getId(), codes);
                 List<JobEntity> jobs = jobJpaRepository.findAllByDeletedFalseAndOrganizationId(org.getId());
-                jobs.removeIf(e -> e.getCode().equals(org.getChiefJob().getCode()));
+                // Remove chief job from the list only if it exists
+                if (org.getChiefJob() != null) {
+                    jobs.removeIf(e -> e.getCode().equals(org.getChiefJob().getCode()));
+                }
                 EmployeeEntity employee;
                 int countDirections;
                 int toEvaluate = 0;
@@ -298,7 +308,10 @@ public class OrganizationQuery {
             allOrganizationUnder.forEach(org -> {
                 var findDirection = organizationJpaRepository.findByParentIdAndTypeNameIn(org.getId(), codes);
                 List<JobEntity> jobs = jobJpaRepository.findAllByDeletedFalseAndOrganizationId(org.getId());
-                jobs.removeIf(e -> e.getCode().equals(org.getChiefJob().getCode()));
+                // Remove chief job from the list only if it exists
+                if (org.getChiefJob() != null) {
+                    jobs.removeIf(e -> e.getCode().equals(org.getChiefJob().getCode()));
+                }
                 int countDirections = 0;
                 int toEvaluate = 0;
                 int evaluated = 0;

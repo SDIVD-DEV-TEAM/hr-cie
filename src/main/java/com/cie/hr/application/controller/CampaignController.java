@@ -1,25 +1,39 @@
 package com.cie.hr.application.controller;
 
-import com.cie.hr.application.command.*;
-import com.cie.hr.common.adapter.BaseResponseEntity;
-import com.cie.hr.common.adapter.HandleRequestResponse;
-import com.cie.hr.domain.usecase.CampaignUseCases;
-import com.cie.hr.infrastructure.service.query.CampaignQuery;
-import com.cie.hr.infrastructure.service.query.ScorecardsQuery;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
 
+import org.springframework.http.HttpHeaders;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.cie.hr.application.command.CloseCampaignCommand;
+import com.cie.hr.application.command.CreateCampaignCommand;
+import com.cie.hr.application.command.DeleteCampaignCommand;
+import com.cie.hr.application.command.OpenCampaignCommand;
+import com.cie.hr.application.command.UpdateCampaignCommand;
+import com.cie.hr.common.adapter.BaseResponseEntity;
+import com.cie.hr.common.adapter.HandleRequestResponse;
+import com.cie.hr.common.scheduler.ScheduledTasks;
+import com.cie.hr.domain.usecase.CampaignUseCases;
+import com.cie.hr.infrastructure.service.query.CampaignQuery;
+import com.cie.hr.infrastructure.service.query.ScorecardsQuery;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/campaign")
@@ -33,12 +47,14 @@ public class CampaignController {
     private final CampaignUseCases campaignUseCase;
     private final ScorecardsQuery scorecardsQuery;
     private final HandleRequestResponse handleRequestResponse;
+    private final ScheduledTasks scheduledTasks;
 
-    public CampaignController(CampaignQuery campaignQuery, CampaignUseCases campaignUseCase, ScorecardsQuery scorecardsQuery, HandleRequestResponse handleRequestResponse) {
+    public CampaignController(CampaignQuery campaignQuery, CampaignUseCases campaignUseCase, ScorecardsQuery scorecardsQuery, HandleRequestResponse handleRequestResponse, ScheduledTasks scheduledTasks) {
         this.campaignQuery = campaignQuery;
         this.campaignUseCase = campaignUseCase;
         this.scorecardsQuery = scorecardsQuery;
         this.handleRequestResponse = handleRequestResponse;
+        this.scheduledTasks = scheduledTasks;
     }
 
     record updateCampaign(String name, Date start_date, Date end_date) {
@@ -106,6 +122,14 @@ public class CampaignController {
         });
     }
 
+    @PostMapping("/trigger-scheduler")
+    @Operation(description = "🔧 Déclencher manuellement le scheduler (change le statut des campagnes)")
+    ResponseEntity<BaseResponseEntity<Object>> triggerScheduler() {
+        return handleRequestResponse.handleRequest(() -> {
+            scheduledTasks.scheduleTaskForCampaignStatusChanges();
+            return "✅ Scheduler exécuté avec succès. Les campagnes ont été mises à jour.";
+        });
+    }
 
     @DeleteMapping("/{campaignId}")
     @Operation(description = "Delete specific campaign")

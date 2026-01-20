@@ -1,12 +1,12 @@
 package com.cie.hr.infrastructure.mapper;
 
+import java.util.Objects;
+
 import com.cie.hr.domain.entity.Organization;
 import com.cie.hr.infrastructure.entity.OrganizationEntity;
 import com.cie.hr.infrastructure.entity.OrganizationTypeEntity;
 import com.cie.hr.infrastructure.service.viewmodel.OrganizationLightVm;
 import com.cie.hr.infrastructure.service.viewmodel.OrganizationVm;
-
-import java.util.Objects;
 
 public class OrganizationMapper {
 
@@ -21,8 +21,7 @@ public class OrganizationMapper {
                 organizationEntity.getCode(),
                 toOrganizationLightVm(organizationEntity.getParent()),
                 OrganizationTypeMapper.toOrganizationVm(organizationEntity.getType()),
-                organizationEntity.getChiefJob() == null ? "" :
-                        organizationEntity.getChiefJob().getEmployee() == null ? "" :
+                organizationEntity.getChiefJob() == null || organizationEntity.getChiefJob().getEmployee() == null ? "" :
                                 organizationEntity.getChiefJob().getEmployee().getFullName(),
                 organizationEntity.getCostCenter(),
                 organizationEntity.getChiefOrganization(),
