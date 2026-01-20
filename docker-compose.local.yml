@@ -1,0 +1,32 @@
+version: "3.9"
+services:
+  web:
+    build:
+      context: .
+      args:
+        VERSION: dev
+    container_name: hr-api-cie-local
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/hr_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_GENERATE_DDL=true
+      - SPRING_PROFILES_ACTIVE=prod
+      - jwt.secret=NeOu0RusDp05/8gE9wfFdwa0kLgcvrqTTV6cz5eEDEt9ZTwsqIBuTyDntLlDyaEIv8SEuvt4w4rbW3NmnW3v+w==
+      - SPRING_MAIL_PASSWORD=P@55w0rd2025
+    ports:
+      - "8090:8090"
+    links:
+      - "db:db"
+    depends_on:
+      - db
+
+  db:
+    container_name: hr-postgres-db-local
+    image: postgres:15.2
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=hr_db
