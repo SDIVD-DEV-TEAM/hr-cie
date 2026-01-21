@@ -1,9 +1,8 @@
 package com.cie.hr.common.email.impl;
 
-import com.cie.hr.common.email.port.EmailServicePort;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
+import java.util.Map;
+
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
@@ -13,11 +12,13 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import java.io.UnsupportedEncodingException;
-import java.util.Map;
-
 import static com.cie.hr.common.email.constant.EmailConstant.PNG_MIME;
 import static com.cie.hr.common.email.constant.EmailConstant.SPRING_LOGO_IMAGE;
+import com.cie.hr.common.email.port.EmailServicePort;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 
 /**
  * @author Alexis TAMBIE
@@ -43,7 +44,7 @@ public class EmailService implements EmailServicePort {
 
     @Override
     public void sendCreateAccountEmail(String to, String subject, String templateName, String password, String name) throws MessagingException, UnsupportedEncodingException {
-        sendEmailHelper(to, subject, templateName, name, Map.of("password", password, "url", environment.getProperty("app.url.base", "http://localhost:8080")));
+        sendEmailHelper(to, subject, templateName, name, Map.of("password", password, "url", environment.getProperty("app.url.base", "https://evaluation-manager-cie.dctd-cie.com/")));
     }
 
     private void sendEmailHelper(String to, String subject, String templateName, String name, Map<String, Object> additionalVariables) throws MessagingException, UnsupportedEncodingException {

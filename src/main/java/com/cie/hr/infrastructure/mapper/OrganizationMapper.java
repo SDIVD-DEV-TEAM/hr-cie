@@ -24,7 +24,7 @@ public class OrganizationMapper {
                 organizationEntity.getChiefJob() == null || organizationEntity.getChiefJob().getEmployee() == null ? "" :
                                 organizationEntity.getChiefJob().getEmployee().getFullName(),
                 organizationEntity.getCostCenter(),
-                organizationEntity.getChiefOrganization(),
+                organizationEntity.getType() != null ? organizationEntity.getType().getName() : null,
                 organizationEntity.getShortCode()
 
         );

@@ -1,5 +1,12 @@
 package com.cie.hr.infrastructure.bootstrap;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
 import com.cie.hr.common.event.CreateEmployeeEvent;
 import com.cie.hr.common.event.publish.CreateEmployeeRequestMessagePublisher;
 import com.cie.hr.infrastructure.entity.EmployeeEntity;
@@ -9,12 +16,6 @@ import com.cie.hr.infrastructure.repository.EmployeeJpaRepository;
 import com.cie.hr.infrastructure.repository.JobJpaRepository;
 import com.cie.hr.infrastructure.repository.ProfileJpaRepository;
 import com.fasterxml.uuid.Generators;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 @Order(8)
 @Component
@@ -42,9 +43,9 @@ public class EmployeeBootstrapCommandLineRunner implements CommandLineRunner {
                 if (profile.isPresent()) {
                     var employee = EmployeeEntity.builder()
                             .profile(profile.get())
-                            .email("virtus225one@gmail.com")
-                            .firstname("Yoan")
-                            .lastname("Virtus")
+                            .email("staffdctd@gmail.com")
+                            .firstname("Raymond")
+                            .lastname("Ano")
                             .employeeNumber("0000")
                             .accessLevel(1)
                             .active(true)
@@ -70,9 +71,9 @@ public class EmployeeBootstrapCommandLineRunner implements CommandLineRunner {
                 if (profile.isPresent()) {
                     var employeeDG = EmployeeEntity.builder()
                             .profile(profile.get())
-                            .email("kysaymeric@gmail.com")
-                            .firstname("Aymeric")
-                            .lastname("Rico")
+                            .email("info@dctd-cie.com")
+                            .firstname("Jean-Christian")
+                            .lastname("Turkson")
                             .employeeNumber("0001")
                             .accessLevel(null)
                             .active(true)
