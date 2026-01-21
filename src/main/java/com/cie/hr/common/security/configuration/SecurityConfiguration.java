@@ -1,12 +1,11 @@
 package com.cie.hr.common.security.configuration;
 
-import com.cie.hr.common.security.filter.JwtAccessDeniedHandler;
-import com.cie.hr.common.security.filter.JwtAuthenticationEntryPoint;
-import com.cie.hr.common.security.filter.JwtAuthorizationFilter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.http.HttpMethod.PUT;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -24,7 +23,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import static org.springframework.http.HttpMethod.*;
+import com.cie.hr.common.security.filter.JwtAccessDeniedHandler;
+import com.cie.hr.common.security.filter.JwtAuthenticationEntryPoint;
+import com.cie.hr.common.security.filter.JwtAuthorizationFilter;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * @author Alexis TAMBIE
@@ -88,10 +91,17 @@ public class SecurityConfiguration {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.Collections.singletonList("*"));
-        configuration.setAllowedMethods(java.util.Collections.singletonList("*"));
-        configuration.setAllowedHeaders(java.util.Collections.singletonList("*"));
+        configuration.setAllowedOrigins(java.util.Arrays.asList(
+            "https://evaluation-manager-cie.dctd-cie.com",
+            "http://localhost:4200",
+            "http://localhost:3000",
+            "http://localhost:8080"
+        ));
+        configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
+        configuration.setExposedHeaders(java.util.Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
         org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
