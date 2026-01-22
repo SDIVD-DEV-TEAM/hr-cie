@@ -1,10 +1,46 @@
 package com.cie.hr.application.adapter;
 
-import com.cie.hr.application.command.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.cie.hr.application.command.AssignJobToEmployeeCommand;
+import com.cie.hr.application.command.CreateJobCommand;
+import com.cie.hr.application.command.DeleteJobCommand;
+import com.cie.hr.application.command.UpdateJobCommand;
+import com.cie.hr.application.command.UpdateJobScorecard;
 import com.cie.hr.common.exception.ApplicationException;
 import com.cie.hr.common.utils.CheckRHEmployee;
-import com.cie.hr.domain.entity.*;
-import com.cie.hr.domain.port.*;
+import com.cie.hr.domain.entity.Campaign;
+import com.cie.hr.domain.entity.EmployeeDomain;
+import com.cie.hr.domain.entity.Grade;
+import com.cie.hr.domain.entity.Job;
+import com.cie.hr.domain.entity.NoteDistribution;
+import com.cie.hr.domain.entity.Organization;
+import com.cie.hr.domain.entity.ScorecardDomain;
+import com.cie.hr.domain.port.CampaignRepositoryPort;
+import com.cie.hr.domain.port.EmployeeRepositoryPort;
+import com.cie.hr.domain.port.GradeRepositoryPort;
+import com.cie.hr.domain.port.JobRepositoryPort;
+import com.cie.hr.domain.port.NoteDistributionRepositoryPort;
+import com.cie.hr.domain.port.OrganizationRepositoryPort;
+import com.cie.hr.domain.port.ScoreCardRepositoryPort;
+import com.cie.hr.domain.port.ScorecardExpertTemplateRepositoryPort;
+import com.cie.hr.domain.port.ScorecardManagerTemplateRepositoryPort;
+import com.cie.hr.domain.port.StatusRepositoryPort;
 import com.cie.hr.domain.usecase.JobUseCases;
 import com.cie.hr.infrastructure.service.viewmodel.ScorecardTemplateImportVm;
 import com.cie.hr.infrastructure.valueobject.EvaluationScorecardExpert;
@@ -12,18 +48,6 @@ import com.cie.hr.infrastructure.valueobject.EvaluationScorecardManager;
 import com.cie.hr.infrastructure.valueobject.FormSpecialLine;
 import com.cie.hr.infrastructure.valueobject.FormSpecialSection;
 import com.fasterxml.uuid.Generators;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * @author Koty BLEU
@@ -239,7 +263,7 @@ public class JobUseCasesAdapter implements JobUseCases {
         Job parentJob = null;
         Organization parent = currentOrganization.get().getParent();
         if (parent != null)
-            parentJob = organizationRepositoryPort.findChiefJob(currentOrganization.get().getId());
+            parentJob = organizationRepositoryPort.findChiefJob(parent.getId());
 
         if (parentJob == null) {
             throw new ApplicationException("Le poste du responsable n'est pas encore pourvu.");
