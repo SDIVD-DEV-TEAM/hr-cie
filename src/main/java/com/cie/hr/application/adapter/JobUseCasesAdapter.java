@@ -148,10 +148,10 @@ public class JobUseCasesAdapter implements JobUseCases {
         Job parentJob = null;
         if (parent != null) {
             parentJob = organizationRepositoryPort.findChiefJob(parent.getId());
-        }
-
-        if (parentJob == null) {
-            throw new ApplicationException("Le poste du responsable n'est pas encore pourvu.");
+            // Vérifier uniquement si on a un parent (pas organisation racine)
+            if (parentJob == null) {
+                throw new ApplicationException("Le poste du responsable n'est pas encore pourvu.");
+            }
         }
 
         var newJob = Job.newBuilder()
@@ -160,7 +160,7 @@ public class JobUseCasesAdapter implements JobUseCases {
                 .grade(grade.get())
                 .organizationId(organization.get())
                 .employeeId(employeeDomain)
-                .parentId(parentJob.getId()).build();
+                .parentId(parentJob != null ? parentJob.getId() : null).build();
 
         newJob.checkBusinessRules(jobRepositoryPort, employeeRepository);
 
@@ -262,13 +262,14 @@ public class JobUseCasesAdapter implements JobUseCases {
 
         Job parentJob = null;
         Organization parent = currentOrganization.get().getParent();
-        if (parent != null)
+        if (parent != null) {
             parentJob = organizationRepositoryPort.findChiefJob(parent.getId());
-
-        if (parentJob == null) {
-            throw new ApplicationException("Le poste du responsable n'est pas encore pourvu.");
-        } else {
-            LOGGER.info("Parent job : {}", parentJob);
+            // Vérifier uniquement si on a un parent (pas organisation racine)
+            if (parentJob == null) {
+                throw new ApplicationException("Le poste du responsable n'est pas encore pourvu.");
+            } else {
+                LOGGER.info("Parent job : {}", parentJob);
+            }
         }
 
         LOGGER.info("Before start creating JobUpate");
@@ -277,7 +278,7 @@ public class JobUseCasesAdapter implements JobUseCases {
                 .title(job.title())
                 .code(job.code())
                 .organizationId(currentOrganization.get())
-                .parentId(parentJob.getId())
+                .parentId(parentJob != null ? parentJob.getId() : null)
                 .grade(currentGrade)
                 .employeeId(employeeDomain)
                 .build();

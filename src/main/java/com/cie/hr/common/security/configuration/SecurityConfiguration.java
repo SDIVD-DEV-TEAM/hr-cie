@@ -1,11 +1,12 @@
 package com.cie.hr.common.security.configuration;
 
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.http.HttpMethod.PUT;
+
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -95,7 +96,8 @@ public class SecurityConfiguration {
             "https://evaluation-manager-cie.dctd-cie.com",
             "http://localhost:4200",
             "http://localhost:3000",
-            "http://localhost:8080"
+            "http://localhost:8080",
+            "http://localhost:8000"
         ));
         configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(java.util.Arrays.asList("*"));

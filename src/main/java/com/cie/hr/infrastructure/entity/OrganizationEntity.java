@@ -1,10 +1,24 @@
 package com.cie.hr.infrastructure.entity;
 
-import com.cie.hr.common.adapter.AbstractEntity;
-import jakarta.persistence.*;
-import lombok.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
-import java.util.*;
+import com.cie.hr.common.adapter.AbstractEntity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * @author Koty BLEU
@@ -45,7 +59,8 @@ public class OrganizationEntity extends AbstractEntity {
     private String shortCode;
 
     public JobEntity getChiefJob() {
-        if (parent == null || parent.getJobs() == null || parent.getJobs().isEmpty()) {
+        // Chercher le chief job dans CETTE organisation, pas dans le parent
+        if (this.jobs == null || this.jobs.isEmpty()) {
             return null;
         }
 
@@ -59,8 +74,8 @@ public class OrganizationEntity extends AbstractEntity {
                 "DR", 5,
                 "AS", 5
         );
-        // Trouver le job avec le grade le plus élevé
-        return this.parent.jobs.stream()
+        // Trouver le job avec le grade le plus élevé dans cette organisation
+        return this.jobs.stream()
                 .filter(job -> job.getGrade() != null && gradeHierarchy.containsKey(job.getGrade().getCode()))
                 .min(Comparator.comparingInt(job -> gradeHierarchy.get(job.getGrade().getCode())))
                 .orElse(null); // Retourner null si aucun job valide n'est trouvé
