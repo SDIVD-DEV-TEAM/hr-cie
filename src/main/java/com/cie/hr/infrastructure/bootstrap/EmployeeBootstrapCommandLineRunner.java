@@ -35,32 +35,77 @@ public class EmployeeBootstrapCommandLineRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        var checkEmployeeRH = employeeJpaRepository.findFirstByProfileCode("RH");
-        if (checkEmployeeRH.isEmpty()) {
-            var checkEmployeeRHU = employeeJpaRepository.findFirstByProfileCode("RHU");
-            if (checkEmployeeRHU.isEmpty()) {
-                var profile = profileJpaRepository.findFirstByCode("RH");
-                if (profile.isPresent()) {
-                    var employee = EmployeeEntity.builder()
-                            .profile(profile.get())
-                            .email("staffdctd@gmail.com")
-                            .firstname("Raymond")
-                            .lastname("Ano")
-                            .employeeNumber("0000")
-                            .accessLevel(1)
-                            .active(true)
-                            .isNotLocked(true)
-                            .isFirstConnect(true).build();
-                    employee.setId(Generators.timeBasedEpochGenerator().generate());
+        // Création des employés RH
+        var profileRH = profileJpaRepository.findFirstByCode("RH");
+        if (profileRH.isPresent()) {
+            // Employé RH 1: Raymond Ano
+            var checkEmployeeRH1 = employeeJpaRepository.findFirstByEmployeeNumber("0000");
+            if (checkEmployeeRH1.isEmpty()) {
+                var employee1 = EmployeeEntity.builder()
+                        .profile(profileRH.get())
+                        .email("staffdctd@gmail.com")
+                        .firstname("Raymond")
+                        .lastname("Ano")
+                        .employeeNumber("0000")
+                        .accessLevel(1)
+                        .active(true)
+                        .isNotLocked(true)
+                        .isFirstConnect(true).build();
+                employee1.setId(Generators.timeBasedEpochGenerator().generate());
 
-                    System.out.println("------ BOOTSTRAP Employee");
-                    employeeJpaRepository.save(employee);
-                    var event = new CreateEmployeeEvent(EmployeeMapper.toEmployeeDomain(employee), ZonedDateTime.now(ZoneId.of("UTC")));
-                    createEmployeeRequestMessagePublisher.publish(event);
-                }
+                System.out.println("------ BOOTSTRAP Employee RH: Raymond Ano");
+                employeeJpaRepository.save(employee1);
+                var event1 = new CreateEmployeeEvent(EmployeeMapper.toEmployeeDomain(employee1), ZonedDateTime.now(ZoneId.of("UTC")));
+                createEmployeeRequestMessagePublisher.publish(event1);
+            } else {
+                System.out.println("------ L'employé RH Raymond Ano existe déjà");
             }
-        } else {
-            System.out.println("------ Il existe déjà un employée RH");
+
+            // Employé RH 2: AGOUA JEAN ABEL
+            var checkEmployeeRH2 = employeeJpaRepository.findFirstByEmployeeNumber("022742V");
+            if (checkEmployeeRH2.isEmpty()) {
+                var employee2 = EmployeeEntity.builder()
+                        .profile(profileRH.get())
+                        .email("jagoua@cie.ci")
+                        .firstname("JEAN ABEL")
+                        .lastname("AGOUA")
+                        .employeeNumber("022742V")
+                        .accessLevel(1)
+                        .active(true)
+                        .isNotLocked(true)
+                        .isFirstConnect(true).build();
+                employee2.setId(Generators.timeBasedEpochGenerator().generate());
+
+                System.out.println("------ BOOTSTRAP Employee RH: AGOUA JEAN ABEL");
+                employeeJpaRepository.save(employee2);
+                var event2 = new CreateEmployeeEvent(EmployeeMapper.toEmployeeDomain(employee2), ZonedDateTime.now(ZoneId.of("UTC")));
+                createEmployeeRequestMessagePublisher.publish(event2);
+            } else {
+                System.out.println("------ L'employé RH AGOUA JEAN ABEL existe déjà");
+            }
+
+            // Employé RH 3: ADOUAKOUA KROU ESTELLE
+            var checkEmployeeRH3 = employeeJpaRepository.findFirstByEmployeeNumber("020201H");
+            if (checkEmployeeRH3.isEmpty()) {
+                var employee3 = EmployeeEntity.builder()
+                        .profile(profileRH.get())
+                        .email("eadouakoua@cie.ci")
+                        .firstname("KROU ESTELLE")
+                        .lastname("ADOUAKOUA")
+                        .employeeNumber("020201H")
+                        .accessLevel(1)
+                        .active(true)
+                        .isNotLocked(true)
+                        .isFirstConnect(true).build();
+                employee3.setId(Generators.timeBasedEpochGenerator().generate());
+
+                System.out.println("------ BOOTSTRAP Employee RH: ADOUAKOUA KROU ESTELLE");
+                employeeJpaRepository.save(employee3);
+                var event3 = new CreateEmployeeEvent(EmployeeMapper.toEmployeeDomain(employee3), ZonedDateTime.now(ZoneId.of("UTC")));
+                createEmployeeRequestMessagePublisher.publish(event3);
+            } else {
+                System.out.println("------ L'employé RH ADOUAKOUA KROU ESTELLE existe déjà");
+            }
         }
 
         var checkEmployeeDG = jobJpaRepository.findByCode("DG");
