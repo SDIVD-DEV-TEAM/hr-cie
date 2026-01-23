@@ -1,21 +1,55 @@
 package com.cie.hr.infrastructure.service.query;
 
-import com.cie.hr.common.exception.ApplicationException;
-import com.cie.hr.common.exception.InfrastructureException;
-import com.cie.hr.common.security.port.CustomAuthenticationManager;
-import com.cie.hr.infrastructure.entity.*;
-import com.cie.hr.infrastructure.mapper.DisputesMapper;
-import com.cie.hr.infrastructure.repository.*;
-import com.cie.hr.infrastructure.service.viewmodel.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.cie.hr.common.exception.ApplicationException;
+import com.cie.hr.common.exception.InfrastructureException;
+import com.cie.hr.common.security.port.CustomAuthenticationManager;
+import com.cie.hr.infrastructure.entity.CampaignEntity;
+import com.cie.hr.infrastructure.entity.DelegationEntity;
+import com.cie.hr.infrastructure.entity.DerogationEntity;
+import com.cie.hr.infrastructure.entity.EmployeeEntity;
+import com.cie.hr.infrastructure.entity.JobEntity;
+import com.cie.hr.infrastructure.entity.OrganizationEntity;
+import com.cie.hr.infrastructure.entity.ScoreRangeEntity;
+import com.cie.hr.infrastructure.entity.ScorecardEntity;
+import com.cie.hr.infrastructure.mapper.DisputesMapper;
+import com.cie.hr.infrastructure.repository.CampaignJpaRepository;
+import com.cie.hr.infrastructure.repository.DelegationJpaRepository;
+import com.cie.hr.infrastructure.repository.DerogationJpaRepository;
+import com.cie.hr.infrastructure.repository.DisputesJpaRepository;
+import com.cie.hr.infrastructure.repository.EmployeeJpaRepository;
+import com.cie.hr.infrastructure.repository.JobJpaRepository;
+import com.cie.hr.infrastructure.repository.ScoreRangeJpaRepository;
+import com.cie.hr.infrastructure.repository.ScorecardJpaRepository;
+import com.cie.hr.infrastructure.service.viewmodel.DashboardStat;
+import com.cie.hr.infrastructure.service.viewmodel.DisputeOnlyVm;
+import com.cie.hr.infrastructure.service.viewmodel.EmployeeListVm;
+import com.cie.hr.infrastructure.service.viewmodel.EmployeePerformanceVm;
+import com.cie.hr.infrastructure.service.viewmodel.EmployeeVm;
+import com.cie.hr.infrastructure.service.viewmodel.EvaluationVm;
+import com.cie.hr.infrastructure.service.viewmodel.JobForEmployeeVm;
+import com.cie.hr.infrastructure.service.viewmodel.PoleVm;
+import com.cie.hr.infrastructure.service.viewmodel.ProfileVm;
+import com.cie.hr.infrastructure.service.viewmodel.StatsTemplate;
+import com.cie.hr.infrastructure.valueobject.EvaluationScorecardExpert;
+import com.cie.hr.infrastructure.valueobject.EvaluationScorecardManager;
+import com.cie.hr.infrastructure.valueobject.FormSpecialSection;
+import com.cie.hr.infrastructure.valueobject.ScorecardForExpert;
+import com.cie.hr.infrastructure.valueobject.ScorecardForManagerForm;
 
 /**
  * @author Koty BLEU
@@ -350,10 +384,65 @@ public class EmployeeQuery {
         if (findEmployeeJob == null) {
             return null;
         }
+        
+        // Retrieve job template for dynamic objective injection
+        JobEntity job = jobJpaRepository.findByEmployeeId(scorecard.getAssessed().getId()).orElse(null);
+        FormSpecialSection jobTemplate = (job != null) ? job.getJobTemplate() : null;
+        
         if (findEmployeeJob.getGrade().getCode().equals("CE")) {
-            return scorecard.getExpertTemplate();
+            // Expert scorecard - inject job template into Section B
+            EvaluationScorecardExpert expertTemplate = scorecard.getExpertTemplate();
+            if (expertTemplate != null && jobTemplate != null && expertTemplate.forms() != null) {
+                ScorecardForExpert updatedForms = new ScorecardForExpert(
+                    expertTemplate.forms().sectionA(),
+                    new FormSpecialSection(
+                        jobTemplate.title(),
+                        jobTemplate.note(),
+                        jobTemplate.type(),
+                        jobTemplate.lines(),
+                        jobTemplate.coefficient(),
+                        jobTemplate.completed()
+                    ),
+                    expertTemplate.forms().sectionC(),
+                    expertTemplate.forms().sectionD()
+                );
+                // Return full EvaluationScorecardExpert with updated forms
+                return new EvaluationScorecardExpert(
+                    expertTemplate.campaignId(),
+                    expertTemplate.note(),
+                    expertTemplate.status(),
+                    updatedForms
+                );
+            }
+            return expertTemplate;
         } else {
-            return scorecard.getManagerTemplate();
+            // Manager scorecard - inject job template into Section D
+            EvaluationScorecardManager managerTemplate = scorecard.getManagerTemplate();
+            if (managerTemplate != null && jobTemplate != null && managerTemplate.forms() != null) {
+                ScorecardForManagerForm updatedForms = new ScorecardForManagerForm(
+                    managerTemplate.forms().sectionA(),
+                    managerTemplate.forms().sectionB(),
+                    managerTemplate.forms().sectionC(),
+                    new FormSpecialSection(
+                        jobTemplate.title(),
+                        jobTemplate.note(),
+                        jobTemplate.type(),
+                        jobTemplate.lines(),
+                        jobTemplate.coefficient(),
+                        jobTemplate.completed()
+                    ),
+                    managerTemplate.forms().sectionE(),
+                    managerTemplate.forms().sectionF()
+                );
+                // Return full EvaluationScorecardManager with updated forms
+                return new EvaluationScorecardManager(
+                    managerTemplate.campaignId(),
+                    managerTemplate.note(),
+                    managerTemplate.status(),
+                    updatedForms
+                );
+            }
+            return managerTemplate;
         }
     }
 
