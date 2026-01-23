@@ -4,9 +4,9 @@ services:
     image: dstdcie17/hr-api-cie:1.1
     container_name: hr-api-cie
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5435/hr_db
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/hr_db
       - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=P@55w0rd#2025
+      - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_GENERATE_DDL=true
     ports:
@@ -17,6 +17,6 @@ services:
     container_name: hr-postgres-db
     image: postgres:15.2
     ports:
-      - "5435:5432"
+      - "5434:5432"
     environment:
       - "POSTGRES_PASSWORD=postgres"
