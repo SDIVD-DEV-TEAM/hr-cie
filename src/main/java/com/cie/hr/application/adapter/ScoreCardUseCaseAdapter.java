@@ -1,5 +1,20 @@
 package com.cie.hr.application.adapter;
 
+import java.io.UnsupportedEncodingException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import com.cie.hr.application.command.CloseScoreCardCommand;
 import com.cie.hr.application.command.CreateScorecardCommand;
 import com.cie.hr.application.command.ReCreatedScorecardCommand;
@@ -10,21 +25,33 @@ import com.cie.hr.common.exception.ApplicationException;
 import com.cie.hr.common.security.port.CustomAuthenticationManager;
 import com.cie.hr.common.utils.CheckRHEmployee;
 import com.cie.hr.common.utils.ScorecardUtils;
-import com.cie.hr.domain.entity.*;
-import com.cie.hr.domain.port.*;
+import com.cie.hr.domain.entity.Campaign;
+import com.cie.hr.domain.entity.Derogation;
+import com.cie.hr.domain.entity.EmployeeDomain;
+import com.cie.hr.domain.entity.Grade;
+import com.cie.hr.domain.entity.Profile;
+import com.cie.hr.domain.entity.ScorecardDomain;
+import com.cie.hr.domain.entity.Status;
+import com.cie.hr.domain.port.CampaignRepositoryPort;
+import com.cie.hr.domain.port.DerogationRepositoryPort;
+import com.cie.hr.domain.port.EmployeeRepositoryPort;
+import com.cie.hr.domain.port.JobRepositoryPort;
+import com.cie.hr.domain.port.NoteDistributionRepositoryPort;
+import com.cie.hr.domain.port.ScoreCardRepositoryPort;
+import com.cie.hr.domain.port.ScoreNoteDistributionRepositoryPort;
+import com.cie.hr.domain.port.ScorecardTemplateRepositoryPort;
+import com.cie.hr.domain.port.StatusRepositoryPort;
 import com.cie.hr.domain.usecase.ScorecardUseCases;
 import com.cie.hr.domain.valueobject.JobEmbedded;
-import com.cie.hr.infrastructure.valueobject.*;
+import com.cie.hr.infrastructure.valueobject.EvaluationScorecardExpert;
+import com.cie.hr.infrastructure.valueobject.EvaluationScorecardManager;
+import com.cie.hr.infrastructure.valueobject.FormSpecialLine;
+import com.cie.hr.infrastructure.valueobject.FormSpecialSection;
+import com.cie.hr.infrastructure.valueobject.ScorecardForExpert;
+import com.cie.hr.infrastructure.valueobject.ScorecardForManagerForm;
 import com.fasterxml.uuid.Generators;
-import jakarta.mail.MessagingException;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-import java.io.UnsupportedEncodingException;
-import java.time.*;
-import java.util.*;
+import jakarta.mail.MessagingException;
 
 /**
  * @author Alexis TAMBIE
