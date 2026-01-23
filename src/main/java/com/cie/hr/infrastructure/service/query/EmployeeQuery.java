@@ -469,7 +469,7 @@ public class EmployeeQuery {
         
         // Create a map of saved lines by title for quick lookup
         Map<String, FormSpecialLine> savedLinesMap = savedLines.stream()
-            .collect(java.util.stream.Collectors.toMap(FormSpecialLine::title, line -> line, (a, b) -> b));
+            .collect(Collectors.toMap(FormSpecialLine::title, line -> line, (a, b) -> b));
         
         // Merge: use template structure but preserve achieved/note from saved data
         return templateLines.stream()
@@ -489,7 +489,7 @@ public class EmployeeQuery {
                 }
                 return templateLine;
             })
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
     }
 
     public List<EmployeeVm> retrieveAllEmployeeWithHighGrade(UUID employeeId) {
