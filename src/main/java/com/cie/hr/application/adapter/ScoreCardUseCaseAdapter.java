@@ -274,8 +274,9 @@ public class ScoreCardUseCaseAdapter implements ScorecardUseCases {
     }
 
     @NotNull
-    private static EvaluationScorecardManager getEvaluationScorecardManager(FormSpecialSection oldData, double note, EvaluationScorecardManager scorecardForm) {
-        FormSpecialSection formSpecialSection = new FormSpecialSection(oldData.title(), note, oldData.type(), oldData.lines(), oldData.coefficient(), oldData.completed());
+    private static EvaluationScorecardManager getEvaluationScorecardManager(FormSpecialSection sectionDWithScores, double note, EvaluationScorecardManager scorecardForm) {
+        // Use the processed sectionD (with achieved values and calculated scores)
+        FormSpecialSection formSpecialSection = new FormSpecialSection(sectionDWithScores.title(), note, sectionDWithScores.type(), sectionDWithScores.lines(), sectionDWithScores.coefficient(), sectionDWithScores.completed());
         ScorecardForManagerForm scorecardForManagerForm = new ScorecardForManagerForm(scorecardForm.forms().sectionA(), scorecardForm.forms().sectionB(), scorecardForm.forms().sectionC(), formSpecialSection, scorecardForm.forms().sectionE(), scorecardForm.forms().sectionF());
         return new EvaluationScorecardManager(scorecardForm.campaignId(), scorecardForm.note(), scorecardForm.status(), scorecardForManagerForm);
     }

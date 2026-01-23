@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,6 +48,7 @@ import com.cie.hr.infrastructure.service.viewmodel.ProfileVm;
 import com.cie.hr.infrastructure.service.viewmodel.StatsTemplate;
 import com.cie.hr.infrastructure.valueobject.EvaluationScorecardExpert;
 import com.cie.hr.infrastructure.valueobject.EvaluationScorecardManager;
+import com.cie.hr.infrastructure.valueobject.FormSpecialLine;
 import com.cie.hr.infrastructure.valueobject.FormSpecialSection;
 import com.cie.hr.infrastructure.valueobject.ScorecardForExpert;
 import com.cie.hr.infrastructure.valueobject.ScorecardForManagerForm;
@@ -393,15 +395,19 @@ public class EmployeeQuery {
             // Expert scorecard - inject job template into Section B
             EvaluationScorecardExpert expertTemplate = scorecard.getExpertTemplate();
             if (expertTemplate != null && jobTemplate != null && expertTemplate.forms() != null) {
+                // Merge saved sectionB with job template (preserve achieved, note values from saved data)
+                FormSpecialSection savedSectionB = expertTemplate.forms().sectionB();
+                List<FormSpecialLine> mergedLines = mergeSpecialLines(jobTemplate.lines(), savedSectionB != null ? savedSectionB.lines() : null);
+                
                 ScorecardForExpert updatedForms = new ScorecardForExpert(
                     expertTemplate.forms().sectionA(),
                     new FormSpecialSection(
                         jobTemplate.title(),
-                        jobTemplate.note(),
+                        savedSectionB != null ? savedSectionB.note() : jobTemplate.note(),
                         jobTemplate.type(),
-                        jobTemplate.lines(),
+                        mergedLines,
                         jobTemplate.coefficient(),
-                        jobTemplate.completed()
+                        savedSectionB != null ? savedSectionB.completed() : jobTemplate.completed()
                     ),
                     expertTemplate.forms().sectionC(),
                     expertTemplate.forms().sectionD()
@@ -419,17 +425,21 @@ public class EmployeeQuery {
             // Manager scorecard - inject job template into Section D
             EvaluationScorecardManager managerTemplate = scorecard.getManagerTemplate();
             if (managerTemplate != null && jobTemplate != null && managerTemplate.forms() != null) {
+                // Merge saved sectionD with job template (preserve achieved, note values from saved data)
+                FormSpecialSection savedSectionD = managerTemplate.forms().sectionD();
+                List<FormSpecialLine> mergedLines = mergeSpecialLines(jobTemplate.lines(), savedSectionD != null ? savedSectionD.lines() : null);
+                
                 ScorecardForManagerForm updatedForms = new ScorecardForManagerForm(
                     managerTemplate.forms().sectionA(),
                     managerTemplate.forms().sectionB(),
                     managerTemplate.forms().sectionC(),
                     new FormSpecialSection(
                         jobTemplate.title(),
-                        jobTemplate.note(),
+                        savedSectionD != null ? savedSectionD.note() : jobTemplate.note(),
                         jobTemplate.type(),
-                        jobTemplate.lines(),
+                        mergedLines,
                         jobTemplate.coefficient(),
-                        jobTemplate.completed()
+                        savedSectionD != null ? savedSectionD.completed() : jobTemplate.completed()
                     ),
                     managerTemplate.forms().sectionE(),
                     managerTemplate.forms().sectionF()
@@ -444,6 +454,42 @@ public class EmployeeQuery {
             }
             return managerTemplate;
         }
+    }
+    
+    /**
+     * Merge job template lines with saved lines, preserving achieved and note values from saved data
+     */
+    private List<FormSpecialLine> mergeSpecialLines(List<FormSpecialLine> templateLines, List<FormSpecialLine> savedLines) {
+        if (templateLines == null) {
+            return savedLines;
+        }
+        if (savedLines == null || savedLines.isEmpty()) {
+            return templateLines;
+        }
+        
+        // Create a map of saved lines by title for quick lookup
+        Map<String, FormSpecialLine> savedLinesMap = savedLines.stream()
+            .collect(java.util.stream.Collectors.toMap(FormSpecialLine::title, line -> line, (a, b) -> b));
+        
+        // Merge: use template structure but preserve achieved/note from saved data
+        return templateLines.stream()
+            .map(templateLine -> {
+                FormSpecialLine savedLine = savedLinesMap.get(templateLine.title());
+                if (savedLine != null) {
+                    // Preserve achieved, note from saved data
+                    return new FormSpecialLine(
+                        templateLine.title(),
+                        templateLine.coefficient(),
+                        savedLine.note(),
+                        templateLine.objective(),
+                        savedLine.achieved(),
+                        templateLine.unit(),
+                        templateLine.noteId()
+                    );
+                }
+                return templateLine;
+            })
+            .collect(java.util.stream.Collectors.toList());
     }
 
     public List<EmployeeVm> retrieveAllEmployeeWithHighGrade(UUID employeeId) {
