@@ -7,9 +7,9 @@ services:
         VERSION: dev
     container_name: hr-api-cie-local
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/hr_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://20.93.150.129:5432/hr_db?connection_limit=30&pool_timeout=20&connect_timeout=10&statement_cache_size=0
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin225
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_GENERATE_DDL=true
       - SPRING_PROFILES_ACTIVE=prod
@@ -17,16 +17,4 @@ services:
       - SPRING_MAIL_PASSWORD=P@55w0rd2025
     ports:
       - "8090:8090"
-    links:
-      - "db:db"
-    depends_on:
-      - db
-
-  db:
-    container_name: hr-postgres-db-local
-    image: postgres:15.2
-    ports:
-      - "5434:5432"
-    environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=hr_db
+  # Service de base de données locale supprimé - utilise maintenant la BD distante sur 20.93.150.129
