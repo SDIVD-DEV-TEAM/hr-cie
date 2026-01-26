@@ -28,7 +28,7 @@ update_app() {
     echo "🚀 Updating $CONTAINER_NAME..."
     docker pull "$IMAGE" >> $OUT_FILE
     echo "After pull image to update"
-    docker container run --name "$CONTAINER_NAME" -p 127.0.0.1:"$PORT":8090 -v /home/debian/hr-project/logs:/usr/app/hr-cie-api/logs --restart on-failure --network "$NETWORK" --env-file /tmp/.env_"$CONTAINER_NAME" -d "$IMAGE" >> $OUT_FILE
+    docker container run --name "$CONTAINER_NAME" -p 127.0.0.1:"$PORT":8090 -v /home/koty_user/hr-project/logs:/usr/app/hr-cie-api/logs --restart on-failure --network "$NETWORK" --env-file /tmp/.env_"$CONTAINER_NAME" -d "$IMAGE" >> $OUT_FILE
     echo "After run container $CONTAINER_NAME..."
 }
 
@@ -51,7 +51,7 @@ check_network() {
 }
 
 verify_log_dir() {
-    LOG_DIR="/home/debian/hr-project/logs"
+    LOG_DIR="/home/koty_user/hr-project/logs"
     echo "📁 Verifying log directory: $LOG_DIR"
     if [ ! -d "$LOG_DIR" ]; then
         mkdir -p "$LOG_DIR"
