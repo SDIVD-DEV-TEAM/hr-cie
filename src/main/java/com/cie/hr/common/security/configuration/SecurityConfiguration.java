@@ -94,6 +94,7 @@ public class SecurityConfiguration {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
         configuration.setAllowedOrigins(java.util.Arrays.asList(
             "https://evaluation-manager-cie.dctd-cie.com",
+            "https://evaluation-manager.dctd-cie.com",
             "http://localhost:4200",
             "http://localhost:3000",
             "http://localhost:8080",
