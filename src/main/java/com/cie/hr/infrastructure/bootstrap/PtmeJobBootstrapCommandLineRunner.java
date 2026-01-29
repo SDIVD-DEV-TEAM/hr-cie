@@ -239,6 +239,7 @@ public class PtmeJobBootstrapCommandLineRunner implements CommandLineRunner {
         }
     }
 
-    // Record pour les données de poste
+    // Record pour les données de poste (occupePar et responsable gardés pour référence future)
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private record PosteData(String code, String codeOrganisation, String libelle, String occupePar, String responsable) {}
 }

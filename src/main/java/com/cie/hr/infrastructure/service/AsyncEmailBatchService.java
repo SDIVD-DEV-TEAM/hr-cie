@@ -6,6 +6,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -144,11 +145,13 @@ public class AsyncEmailBatchService {
         return partitions;
     }
 
+    @SuppressWarnings("PMD.DoNotUseThreads")
     private void sleep(long millis) {
         try {
-            Thread.sleep(millis);
+            TimeUnit.MILLISECONDS.sleep(millis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            LOGGER.debug("Sleep interrupted", e);
         }
     }
 
