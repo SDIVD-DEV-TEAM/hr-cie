@@ -1,9 +1,21 @@
 package com.cie.hr.infrastructure.service.query;
 
-import com.cie.hr.common.event.CreateEmployeeEvent;
+import java.io.UnsupportedEncodingException;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import com.cie.hr.common.event.StartCampaignEvent;
 import com.cie.hr.common.event.listeners.SendStartCampaignEmailEventListener;
-import com.cie.hr.common.event.publish.CreateEmployeeRequestMessagePublisher;
 import com.cie.hr.infrastructure.entity.CampaignEntity;
 import com.cie.hr.infrastructure.entity.EmployeeEntity;
 import com.cie.hr.infrastructure.entity.ScorecardEntity;
@@ -14,17 +26,10 @@ import com.cie.hr.infrastructure.repository.CampaignJpaRepository;
 import com.cie.hr.infrastructure.repository.EmployeeJpaRepository;
 import com.cie.hr.infrastructure.repository.ScorecardJpaRepository;
 import com.cie.hr.infrastructure.repository.StatusJpaRepository;
+import com.cie.hr.infrastructure.service.AsyncEmailBatchService;
 import com.cie.hr.infrastructure.service.viewmodel.CampaignVm;
-import jakarta.mail.MessagingException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
-import java.io.UnsupportedEncodingException;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import jakarta.mail.MessagingException;
 
 /**
  * @author Koty BLEU
@@ -36,7 +41,7 @@ public class CampaignQuery {
 
     private final CampaignJpaRepository campaignJpaRepository;
     private final EmployeeJpaRepository employeeJpaRepository;
-    private final CreateEmployeeRequestMessagePublisher createEmployeeRequestMessagePublisher;
+    private final AsyncEmailBatchService asyncEmailBatchService;
     private final StatusJpaRepository statusJpaRepository;
     private final ScorecardJpaRepository scorecardJpaRepository;
     private final SendStartCampaignEmailEventListener sendStartCampaignEmailEventListener;
@@ -45,13 +50,13 @@ public class CampaignQuery {
 
     public CampaignQuery(CampaignJpaRepository campaignJpaRepository,
                          EmployeeJpaRepository employeeJpaRepository,
-                         CreateEmployeeRequestMessagePublisher createEmployeeRequestMessagePublisher,
+                         AsyncEmailBatchService asyncEmailBatchService,
                          StatusJpaRepository statusJpaRepository,
                          ScorecardJpaRepository scorecardJpaRepository,
                          SendStartCampaignEmailEventListener sendStartCampaignEmailEventListener) {
         this.campaignJpaRepository = campaignJpaRepository;
         this.employeeJpaRepository = employeeJpaRepository;
-        this.createEmployeeRequestMessagePublisher = createEmployeeRequestMessagePublisher;
+        this.asyncEmailBatchService = asyncEmailBatchService;
         this.statusJpaRepository = statusJpaRepository;
         this.scorecardJpaRepository = scorecardJpaRepository;
         this.sendStartCampaignEmailEventListener = sendStartCampaignEmailEventListener;
@@ -115,21 +120,23 @@ public class CampaignQuery {
         Optional<CampaignEntity> campaign = campaignJpaRepository.findById(campaignId);
         campaign.ifPresent(campaignEntity -> {
             LOGGER.info("Find Campaign to open");
+            
+            // Envoi asynchrone par lots des emails d'identifiants
             List<EmployeeEntity> employees = employeeJpaRepository.findBySendAccountIdEmail(false);
-            LOGGER.info("Send email createEmployeeEvent size {}", employees.size());
-            employees.forEach(employee -> {
-                try {
-                    LOGGER.info("Send email createEmployeeEvent start");
-                    var event = new CreateEmployeeEvent(EmployeeMapper.toEmployeeDomain(employee), ZonedDateTime.now(ZoneId.of("UTC")));
-                    createEmployeeRequestMessagePublisher.publish(event);
-                    LOGGER.info("Send email createEmployeeEvent end");
-                    employee.setSendAccountIdEmail(true);
-                    employeeJpaRepository.save(employee);
-                    LOGGER.info("save employee end");
-                } catch (MessagingException | UnsupportedEncodingException e) {
-                    LOGGER.error("Erreur lors de l'envoie de mail de démarrage de campagne", e);
-                }
-            });
+            LOGGER.info("Lancement envoi asynchrone d'emails d'identifiants pour {} employés", employees.size());
+            
+            if (!employees.isEmpty()) {
+                // Envoi asynchrone avec retry et batch processing
+                asyncEmailBatchService.sendCredentialsEmailsAsync(employees)
+                    .thenAccept(result -> {
+                        LOGGER.info("Envoi emails terminé: {} succès, {} échecs (taux: {}%)",
+                            result.successCount(), result.failureCount(), 
+                            String.format("%.1f", result.successRate()));
+                        if (result.hasFailures()) {
+                            LOGGER.warn("Employés en échec: {}", result.failedEmployees());
+                        }
+                    });
+            }
 
             if (campaignEntity.getStatus().getCode().equals("0")) {
                 LOGGER.info("La campagne est en attente de démarrage");

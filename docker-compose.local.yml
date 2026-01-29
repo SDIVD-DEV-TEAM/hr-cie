@@ -1,15 +1,35 @@
 version: "3.9"
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: hr-db-local
+    environment:
+      - POSTGRES_DB=hr_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - hr_db_data:/var/lib/postgresql/data 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hr_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web:
     build:
       context: .
       args:
         VERSION: dev
     container_name: hr-api-cie-local
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://20.93.150.129:5432/hr_db?connection_limit=30&pool_timeout=20&connect_timeout=10&statement_cache_size=0
-      - SPRING_DATASOURCE_USERNAME=admin
-      - SPRING_DATASOURCE_PASSWORD=admin225
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/hr_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_GENERATE_DDL=true
       - SPRING_PROFILES_ACTIVE=prod
@@ -17,4 +37,6 @@ services:
       - SPRING_MAIL_PASSWORD=P@55w0rd2025
     ports:
       - "8090:8090"
-  # Service de base de données locale supprimé - utilise maintenant la BD distante sur 20.93.150.129
+
+volumes:
+  hr_db_data:
