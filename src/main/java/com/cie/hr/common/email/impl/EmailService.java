@@ -44,7 +44,8 @@ public class EmailService implements EmailServicePort {
 
     @Override
     public void sendCreateAccountEmail(String to, String subject, String templateName, String password, String name) throws MessagingException, UnsupportedEncodingException {
-        sendEmailHelper(to, subject, templateName, name, Map.of("password", password, "url", environment.getProperty("app.url.base", "https://evaluation-manager-cie.dctd-cie.com/")));
+        // sendEmailHelper(to, subject, templateName, name, Map.of("password", password, "url", environment.getProperty("app.url.base", "https://evaluation-manager-cie.dctd-cie.com/")));
+        sendEmailHelper(to, subject, templateName, name, Map.of("password", password, "url", environment.getProperty("app.url.base", "https://evaluation-manager.dctd-cie.com/")));
     }
 
     private void sendEmailHelper(String to, String subject, String templateName, String name, Map<String, Object> additionalVariables) throws MessagingException, UnsupportedEncodingException {
