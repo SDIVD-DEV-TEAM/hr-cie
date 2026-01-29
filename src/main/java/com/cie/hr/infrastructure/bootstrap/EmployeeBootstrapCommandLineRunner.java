@@ -61,8 +61,8 @@ public class EmployeeBootstrapCommandLineRunner implements CommandLineRunner {
                 System.out.println("------ L'employé RH Raymond Ano existe déjà");
             }
 
-            // Employé RH 2: AGOUA JEAN ABEL
-            var checkEmployeeRH2 = employeeJpaRepository.findFirstByEmployeeNumber("022742V");
+            // Employé RH 2: AGOUA JEAN ABEL (désactivé)
+            // var checkEmployeeRH2 = employeeJpaRepository.findFirstByEmployeeNumber("022742V");
             // if (checkEmployeeRH2.isEmpty()) {
             //     var employee2 = EmployeeEntity.builder()
             //             .profile(profileRH.get())
@@ -84,8 +84,8 @@ public class EmployeeBootstrapCommandLineRunner implements CommandLineRunner {
             //     System.out.println("------ L'employé RH AGOUA JEAN ABEL existe déjà");
             // }
 
-            // Employé RH 3: ADOUAKOUA KROU ESTELLE
-            var checkEmployeeRH3 = employeeJpaRepository.findFirstByEmployeeNumber("020201H");
+            // Employé RH 3: ADOUAKOUA KROU ESTELLE (désactivé)
+            // var checkEmployeeRH3 = employeeJpaRepository.findFirstByEmployeeNumber("020201H");
             // if (checkEmployeeRH3.isEmpty()) {
             //     var employee3 = EmployeeEntity.builder()
             //             .profile(profileRH.get())

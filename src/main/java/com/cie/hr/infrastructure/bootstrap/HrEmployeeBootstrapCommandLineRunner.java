@@ -30,6 +30,8 @@ import com.fasterxml.uuid.Generators;
 @Component
 public class HrEmployeeBootstrapCommandLineRunner implements CommandLineRunner {
 
+    private static final Pattern DIACRITICAL_MARKS_PATTERN = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+
     private final EmployeeJpaRepository employeeJpaRepository;
     private final ProfileJpaRepository profileJpaRepository;
     private final JobJpaRepository jobJpaRepository;
@@ -239,15 +241,16 @@ public class HrEmployeeBootstrapCommandLineRunner implements CommandLineRunner {
      * Normalise une chaîne: majuscules, sans accents, espaces uniques
      */
     private String normalizeString(String input) {
-        if (input == null) return "";
+        if (input == null) {
+            return "";
+        }
         
         // Convertir en majuscules
         String result = input.toUpperCase();
         
         // Supprimer les accents
         result = Normalizer.normalize(result, Normalizer.Form.NFD);
-        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
-        result = pattern.matcher(result).replaceAll("");
+        result = DIACRITICAL_MARKS_PATTERN.matcher(result).replaceAll("");
         
         // Normaliser les espaces
         result = result.replaceAll("\\s+", " ").trim();

@@ -29,16 +29,6 @@ public class HrJobBootstrapCommandLineRunner implements CommandLineRunner {
     private final OrganizationJpaRepository organizationJpaRepository;
     private final GradeJpaRepository gradeJpaRepository;
 
-    // Mapping des types d'organisation vers les grades
-    private static final Map<String, String> TYPE_TO_GRADE = Map.of(
-            "DIRECTION CENTRALE COMMERCIALE MARKETING ET OPERATIONS", "DC",
-            "DIRECTION COMMERCIALE ET OPERATIONS ABIDJAN", "D",
-            "DIRECTION COMMERCIALE ET OPERATIONS INTERIEUR", "D",
-            "DIRECTION REGIONALE", "DR",
-            "SOUS-DIRECTION", "SD",
-            "ASSISTANT", "AS"
-    );
-
     // Données des postes HR
     private static final List<PosteData> POSTES_DATA = List.of(
             new PosteData("DCCMO01", "DGADC01", "DIRECTION CENTRALE COMMERCIALE MARKETING ET OPERATIONS", "DOH MARIUS", "KOUASSI KONAN MATHIAS"),

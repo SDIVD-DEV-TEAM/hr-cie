@@ -36,7 +36,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "HR Employee Welcome Emails APIs")
 public class HrEmployeeEmailController {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
+    private static final Logger LOGGER = LoggerFactory.getLogger(HrEmployeeEmailController.class);
     private final EmployeeWelcomeEmailService welcomeEmailService;
     private final HandleRequestResponse handleRequestResponse;
 
