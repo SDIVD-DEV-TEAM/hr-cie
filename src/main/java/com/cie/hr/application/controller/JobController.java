@@ -1,20 +1,36 @@
 package com.cie.hr.application.controller;
 
-import com.cie.hr.application.command.*;
+import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.cie.hr.application.command.AssignJobToEmployeeCommand;
+import com.cie.hr.application.command.AssignJobToEmployeeLightCommand;
+import com.cie.hr.application.command.CreateJobCommand;
+import com.cie.hr.application.command.DeleteJobCommand;
+import com.cie.hr.application.command.UpdateJobCommand;
+import com.cie.hr.application.command.UpdateJobScorecard;
 import com.cie.hr.common.adapter.BaseResponseEntity;
 import com.cie.hr.common.adapter.HandleRequestResponse;
 import com.cie.hr.domain.port.JobRepositoryPort;
 import com.cie.hr.domain.usecase.JobUseCases;
 import com.cie.hr.infrastructure.service.query.JobQuery;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.UUID;
 
 /**
  * @author Koty BLEU
@@ -86,6 +102,15 @@ public class JobController {
     public ResponseEntity<BaseResponseEntity<Object>> assignJobToEmployee(@PathVariable("jobId") UUID jobId, @RequestBody AssignJobToEmployeeLightCommand commandBody) {
         return handleRequestResponse.handleRequest(() -> {
             AssignJobToEmployeeCommand command = new AssignJobToEmployeeCommand(jobId, commandBody.employeeId());
+            return command.execute(jobUseCases);
+        });
+    }
+
+    @PutMapping("/{jobId}/employee/{employeeId}")
+    @Operation(description = "Assign Job to an employee (Alternative Route)")
+    public ResponseEntity<BaseResponseEntity<Object>> assignJobToEmployeeAlternative(@PathVariable("jobId") UUID jobId, @PathVariable("employeeId") UUID employeeId) {
+        return handleRequestResponse.handleRequest(() -> {
+            AssignJobToEmployeeCommand command = new AssignJobToEmployeeCommand(jobId, employeeId);
             return command.execute(jobUseCases);
         });
     }

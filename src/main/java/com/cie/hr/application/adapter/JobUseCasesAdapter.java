@@ -368,11 +368,16 @@ public class JobUseCasesAdapter implements JobUseCases {
             // Find employee Job
             Job findEmployeeJob = jobRepositoryPort.findByEmployeeId(employee.get().id()).orElse(null);
             if (findEmployeeJob != null) {
-                deleteScorecard(findEmployeeJob.getEmployeeId().id());
-            } else {
-                jobDomain.setEmployeeId(employee.get());
-                jobRepositoryPort.updateAndSave(jobDomain);
+                // Libérer l'ancien poste
+                findEmployeeJob.setEmployeeId(null);
+                jobRepositoryPort.updateAndSave(findEmployeeJob);
+                
+                deleteScorecard(employee.get().id());
             }
+
+            // Affecter au nouveau poste (toujours exécuté)
+            jobDomain.setEmployeeId(employee.get());
+            jobRepositoryPort.updateAndSave(jobDomain);
             createScorecardForEmployee(employee.get(), jobDomain.getGrade().getCode());
             return true;
         }
