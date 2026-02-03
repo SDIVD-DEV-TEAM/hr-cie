@@ -412,6 +412,7 @@ public class JobUseCasesAdapter implements JobUseCases {
 
             return job.getId();
         } catch (Exception ex) {
+            LOGGER.error("Erreur lors de la mise à jour de la fiche de notation", ex);
             throw new ApplicationException("Erreur lors de la mise à jour de la fiche de notation");
         }
     }
@@ -440,7 +441,11 @@ public class JobUseCasesAdapter implements JobUseCases {
                 Double targetValue = getCellValueAsDouble(row.getCell(3));
                 String formulas = getCellValueAsString(row.getCell(4));
 
-                if (indicator.isEmpty() || unit.isEmpty() || targetValue == null || weight == null || formulas.isEmpty()) {
+                if (indicator == null || unit == null || targetValue == null || weight == null || formulas == null) {
+                    continue;
+                }
+
+                if (indicator.isEmpty() || unit.isEmpty() || formulas.isEmpty()) {
                     continue;
                 }
 
