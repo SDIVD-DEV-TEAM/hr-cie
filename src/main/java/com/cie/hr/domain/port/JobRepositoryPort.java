@@ -1,10 +1,10 @@
 package com.cie.hr.domain.port;
 
-import com.cie.hr.domain.entity.Job;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.cie.hr.domain.entity.Job;
 
 /**
  * @author Koty BLEU
@@ -23,6 +23,8 @@ public interface JobRepositoryPort extends AbstractRepository<Job, UUID> {
     List<Job> findAllJobsWithEmployees();
 
     Optional<Job> findByEmployeeId(UUID employeeId);
+
+    List<Job> findByOrganizationId(UUID organizationId);
 
     void save(Job job);
 }

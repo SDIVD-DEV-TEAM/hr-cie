@@ -148,9 +148,9 @@ public class JobUseCasesAdapter implements JobUseCases {
         Job parentJob = null;
         if (parent != null) {
             parentJob = organizationRepositoryPort.findChiefJob(parent.getId());
-            // Vérifier uniquement si on a un parent (pas organisation racine)
+            // Si l'org parente n'a pas encore de chef, on continue avec parentJob = null
             if (parentJob == null) {
-                throw new ApplicationException("Le poste du responsable n'est pas encore pourvu.");
+                LOGGER.warn("Aucun chef trouvé pour l'organisation parente {}, parent_id sera null", parent.getId());
             }
         }
 
@@ -264,12 +264,23 @@ public class JobUseCasesAdapter implements JobUseCases {
         Organization parent = currentOrganization.get().getParent();
         if (parent != null) {
             parentJob = organizationRepositoryPort.findChiefJob(parent.getId());
-            // Vérifier uniquement si on a un parent (pas organisation racine)
-            if (parentJob == null) {
-                throw new ApplicationException("Le poste du responsable n'est pas encore pourvu.");
-            } else {
-                LOGGER.info("Parent job : {}", parentJob);
+
+            if (parentJob != null && parentJob.getId().equals(command.jobId())) {
+                Organization grandParent = parent.getParent();
+                if (grandParent != null) {
+                    parentJob = organizationRepositoryPort.findChiefJob(grandParent.getId());
+                    // Si pas de chef au niveau N+2, on laisse parentJob = null
+                    if (parentJob == null) {
+                        LOGGER.warn("Aucun chef trouvé pour l'organisation grand-parente, parent_id sera null");
+                    }
+                } else {
+                    parentJob = null;
+                }
+            } else if (parentJob == null) {
+                // Permettre la mise à jour avec parent = null si l'org parente n'a pas de chef
+                LOGGER.warn("Aucun chef trouvé pour l'organisation parente {}, parent_id sera null", parent.getId());
             }
+            LOGGER.info("Parent job : {}", parentJob);
         }
 
         LOGGER.info("Before start creating JobUpate");
@@ -302,6 +313,13 @@ public class JobUseCasesAdapter implements JobUseCases {
             return null;
         } else {
             this.jobRepositoryPort.updateAndSave(jobRefreshed);
+            
+            // Recalculer les parent_id des postes dans les organisations enfants
+            // si le poste modifié est potentiellement un chef (a un grade et un employé)
+            if (jobRefreshed.getGrade() != null && jobRefreshed.getEmployeeId() != null) {
+                recalculateChildJobsParent(jobRefreshed.getOrganizationId().getId());
+            }
+            
             return jobRefreshed.getId();
         }
     }
@@ -379,6 +397,10 @@ public class JobUseCasesAdapter implements JobUseCases {
             jobDomain.setEmployeeId(employee.get());
             jobRepositoryPort.updateAndSave(jobDomain);
             createScorecardForEmployee(employee.get(), jobDomain.getGrade().getCode());
+            
+            // Recalculer les parent_id des postes dans les organisations enfants
+            recalculateChildJobsParent(jobDomain.getOrganizationId().getId());
+            
             return true;
         }
     }
@@ -559,5 +581,49 @@ public class JobUseCasesAdapter implements JobUseCases {
                 }
             }
         });
+    }
+
+    /**
+     * Recalcule automatiquement le parent_id de tous les postes dans les organisations enfants
+     * lorsque le chef de l'organisation actuelle change.
+     * 
+     * @param organizationId L'ID de l'organisation dont le chef a potentiellement changé
+     */
+    private void recalculateChildJobsParent(UUID organizationId) {
+        LOGGER.info("Recalcul des parent_id pour les enfants de l'organisation {}", organizationId);
+        
+        // 1. Récupérer le nouveau chef de l'organisation actuelle
+        Job chiefJob = organizationRepositoryPort.findChiefJob(organizationId);
+        UUID newParentId = chiefJob != null ? chiefJob.getId() : null;
+        
+        LOGGER.info("Nouveau chef trouvé: {}", newParentId != null ? newParentId : "AUCUN");
+        
+        // 2. Récupérer toutes les organisations enfants directes
+        List<Organization> childOrganizations = organizationRepositoryPort.findByParentId(organizationId);
+        
+        if (childOrganizations.isEmpty()) {
+            LOGGER.info("Aucune organisation enfant trouvée pour {}", organizationId);
+            return;
+        }
+        
+        LOGGER.info("Nombre d'organisations enfants trouvées: {}", childOrganizations.size());
+        
+        // 3. Pour chaque organisation enfant, mettre à jour tous ses postes
+        int totalUpdated = 0;
+        for (Organization childOrg : childOrganizations) {
+            List<Job> jobsToUpdate = jobRepositoryPort.findByOrganizationId(childOrg.getId());
+            
+            for (Job job : jobsToUpdate) {
+                // Force le parent selon la hiérarchie organisationnelle
+                if (!java.util.Objects.equals(job.getParentId(), newParentId)) {
+                    job.setParentId(newParentId);
+                    jobRepositoryPort.updateAndSave(job);
+                    totalUpdated++;
+                    LOGGER.debug("Mis à jour parent_id pour job {} vers {}", job.getId(), newParentId);
+                }
+            }
+        }
+        
+        LOGGER.info("Recalcul terminé: {} postes mis à jour", totalUpdated);
     }
 }

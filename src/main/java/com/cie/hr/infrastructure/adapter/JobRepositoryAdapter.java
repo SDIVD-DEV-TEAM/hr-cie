@@ -1,5 +1,15 @@
 package com.cie.hr.infrastructure.adapter;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.cie.hr.common.adapter.AbstractEntity;
 import com.cie.hr.common.exception.ApplicationException;
 import com.cie.hr.domain.entity.Job;
@@ -7,15 +17,6 @@ import com.cie.hr.domain.port.JobRepositoryPort;
 import com.cie.hr.infrastructure.entity.JobEntity;
 import com.cie.hr.infrastructure.mapper.JobMapper;
 import com.cie.hr.infrastructure.repository.JobJpaRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.CannotAcquireLockException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * @author Koty BLEU
@@ -95,5 +96,12 @@ public class JobRepositoryAdapter implements JobRepositoryPort {
     @Override
     public Optional<Job> findByEmployeeId(UUID employeeId) {
         return jobJpaRepository.findByEmployeeId(employeeId).map(JobMapper::toJobDomain);
+    }
+
+    @Override
+    public List<Job> findByOrganizationId(UUID organizationId) {
+        return jobJpaRepository.findAllByDeletedFalseAndOrganizationId(organizationId).stream()
+                .map(JobMapper::toJobDomain)
+                .toList();
     }
 }

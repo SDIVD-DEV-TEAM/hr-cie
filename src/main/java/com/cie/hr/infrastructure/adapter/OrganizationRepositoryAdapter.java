@@ -1,5 +1,15 @@
 package com.cie.hr.infrastructure.adapter;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.cie.hr.common.exception.ApplicationException;
 import com.cie.hr.domain.entity.Job;
 import com.cie.hr.domain.entity.Organization;
@@ -8,14 +18,6 @@ import com.cie.hr.infrastructure.entity.OrganizationEntity;
 import com.cie.hr.infrastructure.mapper.JobMapper;
 import com.cie.hr.infrastructure.mapper.OrganizationMapper;
 import com.cie.hr.infrastructure.repository.OrganizationJpaRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.CannotAcquireLockException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
-import java.util.UUID;
 
 @Transactional
 @Service
@@ -79,5 +81,12 @@ public class OrganizationRepositoryAdapter implements OrganizationRepositoryPort
     @Override
     public Optional<Organization> findByCode(String code) {
         return organizationJpaRepository.findFirstByCode(code).map(OrganizationMapper::toOrganization);
+    }
+
+    @Override
+    public List<Organization> findByParentId(UUID parentId) {
+        return organizationJpaRepository.findByParentId(parentId).stream()
+                .map(OrganizationMapper::toOrganization)
+                .toList();
     }
 }

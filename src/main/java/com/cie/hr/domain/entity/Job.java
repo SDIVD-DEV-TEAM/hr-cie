@@ -1,14 +1,15 @@
 package com.cie.hr.domain.entity;
 
+import java.util.UUID;
+
 import com.cie.hr.common.exception.DomainException;
 import com.cie.hr.domain.port.EmployeeRepositoryPort;
 import com.cie.hr.domain.port.JobRepositoryPort;
 import com.cie.hr.infrastructure.valueobject.FormSpecialSection;
 import com.fasterxml.uuid.Generators;
+
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.UUID;
 
 /**
  * @author Koty BLEU
@@ -123,7 +124,7 @@ public class Job {
             throw new DomainException("Job with code : " + code + " already exists");
 
         // checks if job parent exists
-        if (jobRepositoryPort.existsById(parentId).isEmpty())
+        if (parentId != null && jobRepositoryPort.existsById(parentId).isEmpty())
             throw new DomainException("Job parent with : " + parentId + " not exists");
 
         // checks if employee exists is not null

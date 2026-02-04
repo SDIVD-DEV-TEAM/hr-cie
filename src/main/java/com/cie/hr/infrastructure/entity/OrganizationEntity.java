@@ -2,7 +2,6 @@ package com.cie.hr.infrastructure.entity;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 import com.cie.hr.common.adapter.AbstractEntity;
 
@@ -64,21 +63,12 @@ public class OrganizationEntity extends AbstractEntity {
             return null;
         }
 
-        // Définir l'ordre hiérarchique des grades
-        Map<String, Integer> gradeHierarchy = Map.of(
-                "DG", 1,
-                "DGA", 2,
-                "D", 3,
-                "DA", 4,
-                "SD", 5,
-                "DR", 5,
-                "AS", 5
-        );
-        // Trouver le job avec le grade le plus élevé dans cette organisation
+        // Utiliser le champ 'rank' du grade pour déterminer le chef
+        // Plus le rank est bas, plus le grade est élevé (DG=0, DGA=2, DC=3, etc.)
         return this.jobs.stream()
-                .filter(job -> job.getGrade() != null && gradeHierarchy.containsKey(job.getGrade().getCode()))
-                .min(Comparator.comparingInt(job -> gradeHierarchy.get(job.getGrade().getCode())))
-                .orElse(null); // Retourner null si aucun job valide n'est trouvé
+                .filter(job -> job.getGrade() != null && !job.isDeleted())
+                .min(Comparator.comparingInt(job -> job.getGrade().getRank()))
+                .orElse(null);
     }
 
     public String getChiefOrganization() {
