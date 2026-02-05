@@ -1,16 +1,18 @@
 package com.cie.hr.infrastructure.repository;
 
-import com.cie.hr.infrastructure.entity.ScorecardEntity;
-import jakarta.persistence.LockModeType;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import com.cie.hr.infrastructure.entity.ScorecardEntity;
+
+import jakarta.persistence.LockModeType;
 
 /**
  * @author Koty BLEU
@@ -27,24 +29,30 @@ public interface ScorecardJpaRepository extends JpaRepository<ScorecardEntity, U
     List<ScorecardEntity> findAllByManagerId(UUID assessedId);
 
     @Query(value = """
-            SELECT s.*
+            SELECT DISTINCT s.*
             FROM scorecards s
             INNER JOIN employees e on e.id = s.assessed_id
             INNER JOIN jobs j on j.employee_id = e.id
             INNER JOIN grades g on g.id = j.grade_id
             INNER JOIN status st on st.id = s.status_id
             WHERE g.code in :codes
-            AND s.campaign_id = :campaign_id""", nativeQuery = true)
+            AND s.campaign_id = :campaign_id
+            AND j.deleted = false
+            AND s.deleted = false
+            AND e.deleted = false""", nativeQuery = true)
     List<ScorecardEntity> findAllScorecardWithCampaignAndGrade(@Param("codes") List<String> codes, @Param("campaign_id") UUID campaign_id);
 
     @Query(value = """
-            SELECT s.*
+            SELECT DISTINCT s.*
             FROM scorecards s
             INNER JOIN employees e on e.id = s.assessed_id
             INNER JOIN jobs j on j.employee_id = e.id
             INNER JOIN status st on st.id = s.status_id
             WHERE j.organization_id = :organization
             AND st.code = '2'
+            AND j.deleted = false
+            AND s.deleted = false
+            AND e.deleted = false
             """, nativeQuery = true)
     List<ScorecardEntity> findAllOrganizationScorecard(@Param("organization") UUID campaign_id);
 

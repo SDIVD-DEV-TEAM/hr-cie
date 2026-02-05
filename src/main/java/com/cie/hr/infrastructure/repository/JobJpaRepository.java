@@ -1,16 +1,18 @@
 package com.cie.hr.infrastructure.repository;
 
-import com.cie.hr.infrastructure.entity.JobEntity;
-import jakarta.persistence.LockModeType;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import com.cie.hr.infrastructure.entity.JobEntity;
+
+import jakarta.persistence.LockModeType;
 
 /**
  * @author Koty BLEU
@@ -34,6 +36,8 @@ public interface JobJpaRepository extends JpaRepository<JobEntity, UUID> {
     List<JobEntity> findAllByDeletedFalseAndEmployeeIdIsNotNull();
 
     Optional<JobEntity> findByEmployeeId(UUID employeeId);
+
+    Optional<JobEntity> findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(UUID employeeId);
 
     List<JobEntity> findAllByDeletedFalseAndEmployeeIdIsNull();
 

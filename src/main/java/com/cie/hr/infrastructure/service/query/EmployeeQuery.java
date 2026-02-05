@@ -104,7 +104,7 @@ public class EmployeeQuery {
 
     public Optional<EmployeeVm> employeeDetail(UUID id) {
         return this.employeeJpaRepository.findById(id).map(employee -> {
-            var job = jobJpaRepository.findByEmployeeId(id);
+            var job = jobJpaRepository.findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(id);
             OrganizationEntity organization = job.map(JobEntity::getOrganization).orElse(null);
 
             if (organization != null) {
@@ -347,7 +347,7 @@ public class EmployeeQuery {
         List<DerogationEntity> delegationList = derogationJpaRepository.findAllByMangerIdAndDeletedFalse(employeeId);
 
         return delegationList.stream().map(delegation -> {
-            JobEntity job = jobJpaRepository.findByEmployeeId(delegation.getEmployee().getId()).orElse(null);
+            JobEntity job = jobJpaRepository.findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(delegation.getEmployee().getId()).orElse(null);
             if (job == null) {
                 return null;
             }
@@ -382,13 +382,13 @@ public class EmployeeQuery {
         if (scorecard == null) {
             return null;
         }
-        JobEntity findEmployeeJob = jobJpaRepository.findByEmployeeId(scorecard.getAssessed().getId()).orElse(null);
+        JobEntity findEmployeeJob = jobJpaRepository.findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(scorecard.getAssessed().getId()).orElse(null);
         if (findEmployeeJob == null) {
             return null;
         }
         
         // Retrieve job template for dynamic objective injection
-        JobEntity job = jobJpaRepository.findByEmployeeId(scorecard.getAssessed().getId()).orElse(null);
+        JobEntity job = jobJpaRepository.findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(scorecard.getAssessed().getId()).orElse(null);
         FormSpecialSection jobTemplate = (job != null) ? job.getJobTemplate() : null;
         
         if (findEmployeeJob.getGrade().getCode().equals("CE")) {
@@ -495,7 +495,7 @@ public class EmployeeQuery {
     public List<EmployeeVm> retrieveAllEmployeeWithHighGrade(UUID employeeId) {
         var employee = employeeJpaRepository.findById(employeeId);
         if (employee.isPresent()) {
-            JobEntity findEmployeeJob = jobJpaRepository.findByEmployeeId(employeeId).orElse(null);
+            JobEntity findEmployeeJob = jobJpaRepository.findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(employeeId).orElse(null);
             if (findEmployeeJob == null) {
                 return new ArrayList<>();
             } else {
@@ -565,7 +565,7 @@ public class EmployeeQuery {
 
                     List<DelegationEntity> delegationToRemoveList = delegationJpaRepository.findByCampaignIdAndGiverIdAndDeletedFalse(findCampaign.get().getId(), findEmployee.get().getId());
                     List<UUID> toRemoveList = delegationToRemoveList.stream().map(e -> e.getEmployee().getId()).toList();
-                    Optional<JobEntity> employeeJob = jobJpaRepository.findByEmployeeId(findEmployee.get().getId());
+                    Optional<JobEntity> employeeJob = jobJpaRepository.findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(findEmployee.get().getId());
                     if (employeeJob.isPresent()) {
                         List<EmployeeListVm> employeeListVms;
                         if (employeeJob.get().getParent() == null) {
@@ -721,7 +721,7 @@ public class EmployeeQuery {
     }
 
     private EmployeePerformanceVm getEmployeePerformanceVm(ScorecardEntity scorecard) {
-        JobEntity findEmployeeJob = jobJpaRepository.findByEmployeeId(scorecard.getAssessed().getId()).orElse(null);
+        JobEntity findEmployeeJob = jobJpaRepository.findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(scorecard.getAssessed().getId()).orElse(null);
         return new EmployeePerformanceVm(
                 scorecard.getId(),
                 scorecard.getCampaign().getName(),
@@ -811,7 +811,7 @@ public class EmployeeQuery {
     }
 
     private JobEntity findEmployeeJob(UUID employeeId) {
-        return jobJpaRepository.findByEmployeeId(employeeId).orElse(null);
+        return jobJpaRepository.findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(employeeId).orElse(null);
     }
 
     private Optional<ScorecardEntity> getScorecard(UUID campaignId, UUID employeeId) {
