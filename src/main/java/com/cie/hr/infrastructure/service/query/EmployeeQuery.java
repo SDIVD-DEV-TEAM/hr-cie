@@ -224,28 +224,28 @@ public class EmployeeQuery {
                                     var findScorecards = scorecardJpaRepository.findAllScorecardWithCampaignAndGrade(codes, campaign.getId());
                                     if (!findScorecards.isEmpty()) {
                                         findScorecards.forEach(scorecard -> employeeListVms.add(getEmployeePerformanceVm(scorecard)));
-                                        return Optional.of(employeeListVms);
+                                        return Optional.of(deduplicateByEmployee(employeeListVms));
                                     }
                                 }
                                 case 2 -> {
                                     codes = List.of("D", "DA", "SD", "DR");
                                     var findScorecards = scorecardJpaRepository.findAllScorecardWithCampaignAndGrade(codes, campaign.getId());
                                     findScorecards.forEach(scorecard -> employeeListVms.add(getEmployeePerformanceVm(scorecard)));
-                                    return Optional.of(employeeListVms);
+                                    return Optional.of(deduplicateByEmployee(employeeListVms));
                                 }
                                 case 3 -> {
                                     codes = List.of("DC", "D", "DA", "SD", "DR");
                                     var findScorecards = scorecardJpaRepository.findAllScorecardWithCampaignAndGrade(codes, campaign.getId());
                                     if (!findScorecards.isEmpty()) {
                                         findScorecards.forEach(scorecard -> employeeListVms.add(getEmployeePerformanceVm(scorecard)));
-                                        return Optional.of(employeeListVms);
+                                        return Optional.of(deduplicateByEmployee(employeeListVms));
                                     }
                                 }
                                 case 4 -> {
                                     var findScorecards = scorecardJpaRepository.findByDeletedFalseAndCampaignId(campaign.getId());
                                     LOGGER.info("Scorecards: {}", findScorecards.size());
                                     findScorecards.forEach(scorecard -> employeeListVms.add(getEmployeePerformanceVm(scorecard)));
-                                    return Optional.of(employeeListVms);
+                                    return Optional.of(deduplicateByEmployee(employeeListVms));
                                 }
                                 default ->
                                         throw new InfrastructureException("Vous n'êtes pas autorisé à effectué cette action");
@@ -303,7 +303,7 @@ public class EmployeeQuery {
                             findScorecards = scorecardJpaRepository.findAllByDeletedFalseAndAssessedIdAndCampaignStatusNameNot(currentEmployee.getId(), "notStarted");
                         }
                         employeeListVms = findScorecards.stream().map(this::getEmployeePerformanceVm).collect(Collectors.toList());
-                        return Optional.of(employeeListVms);
+                        return Optional.of(deduplicateByEmployee(employeeListVms));
                     }
                 }
                 return Optional.empty();
@@ -850,6 +850,30 @@ public class EmployeeQuery {
                 scorecard.getExpertTemplate() == null ? scorecard.getManagerTemplate().note() : scorecard.getExpertTemplate().note(),
                 scorecard.getCampaign().getName()
         );
+    }
+
+    /**
+     * Remove duplicate scorecards for the same employee, keeping only the most recent one.
+     * Since UUIDs are v7 (time-ordered), we compare them lexicographically to get the latest.
+     */
+    private List<EmployeePerformanceVm> deduplicateByEmployee(List<EmployeePerformanceVm> scorecards) {
+        Map<UUID, EmployeePerformanceVm> deduplicatedMap = new java.util.HashMap<>();
+        
+        for (EmployeePerformanceVm scorecard : scorecards) {
+            UUID employeeId = scorecard.employeeId();
+            
+            if (!deduplicatedMap.containsKey(employeeId)) {
+                deduplicatedMap.put(employeeId, scorecard);
+            } else {
+                // Keep the scorecard with the higher (more recent) scorecardId (UUID v7 is time-ordered)
+                EmployeePerformanceVm existing = deduplicatedMap.get(employeeId);
+                if (scorecard.scorecardId().compareTo(existing.scorecardId()) > 0) {
+                    deduplicatedMap.put(employeeId, scorecard);
+                }
+            }
+        }
+        
+        return new ArrayList<>(deduplicatedMap.values());
     }
 }
 
