@@ -1,5 +1,8 @@
 package com.cie.hr.common.email.impl;
 
+import static com.cie.hr.common.email.constant.EmailConstant.PNG_MIME;
+import static com.cie.hr.common.email.constant.EmailConstant.SPRING_LOGO_IMAGE;
+
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
@@ -12,8 +15,6 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import static com.cie.hr.common.email.constant.EmailConstant.PNG_MIME;
-import static com.cie.hr.common.email.constant.EmailConstant.SPRING_LOGO_IMAGE;
 import com.cie.hr.common.email.port.EmailServicePort;
 
 import jakarta.mail.MessagingException;
@@ -27,6 +28,8 @@ import jakarta.mail.internet.MimeMessage;
  */
 @Service
 public class EmailService implements EmailServicePort {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EmailService.class);
+
     private final JavaMailSender mailSender;
     private final Environment environment;
     private final TemplateEngine htmlTemplateEngine;
@@ -49,6 +52,8 @@ public class EmailService implements EmailServicePort {
     }
 
     private void sendEmailHelper(String to, String subject, String templateName, String name, Map<String, Object> additionalVariables) throws MessagingException, UnsupportedEncodingException {
+        LOGGER.info("Préparation envoi email à: {} - Sujet: {}", to, subject);
+        
         String mailFrom = environment.getProperty("spring.mail.username");
         String mailFromName = environment.getProperty("mail.from.name", "Identity");
 
@@ -69,5 +74,6 @@ public class EmailService implements EmailServicePort {
         helper.addInline("logoCIE", new ClassPathResource(SPRING_LOGO_IMAGE), PNG_MIME);
 
         mailSender.send(message);
+        LOGGER.info("Email envoyé avec succès à: {}", to);
     }
 }

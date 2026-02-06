@@ -1,15 +1,21 @@
 package com.cie.hr.infrastructure.repository;
 
-import com.cie.hr.infrastructure.entity.EmployeeEntity;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.QueryHint;
-import org.springframework.data.jpa.repository.*;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.cie.hr.infrastructure.entity.EmployeeEntity;
+
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 
 /**
  * @author Koty BLEU
@@ -48,4 +54,18 @@ public interface EmployeeJpaRepository extends JpaRepository<EmployeeEntity, UUI
 
     @Query(value = "SELECT e FROM EmployeeEntity e WHERE e.email LIKE '%cie.ci'")
     List<EmployeeEntity> findByEmailDomain();
+
+    /**
+     * Find all active employees who haven't received their credentials email
+     * Used by scheduled task to send missing credentials emails
+     */
+    @Query(value = "SELECT e FROM EmployeeEntity e WHERE e.deleted = false AND e.active = true AND (e.sendAccountIdEmail = false OR e.sendAccountIdEmail IS NULL)")
+    List<EmployeeEntity> findActiveUsersWithoutCredentialsEmail();
+
+    /**
+     * Find all employees who are currently locked
+     * Used by scheduled task to unlock blocked users
+     */
+    @Query(value = "SELECT e FROM EmployeeEntity e WHERE e.deleted = false AND e.isNotLocked = false")
+    List<EmployeeEntity> findLockedUsers();
 }

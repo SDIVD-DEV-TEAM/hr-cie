@@ -20,6 +20,7 @@ import com.cie.hr.common.event.ScorecardEvent;
 import com.cie.hr.common.event.StartCampaignEvent;
 import com.cie.hr.common.event.listeners.ScorecardEventListener;
 import com.cie.hr.common.event.listeners.SendCloseCampaignEmailEventListener;
+import com.cie.hr.common.security.service.LoginAttemptService;
 import com.cie.hr.domain.entity.EmployeeDomain;
 import com.cie.hr.domain.entity.ScorecardDomain;
 import com.cie.hr.infrastructure.entity.CampaignEntity;
@@ -36,6 +37,7 @@ import com.cie.hr.infrastructure.repository.EmployeeJpaRepository;
 import com.cie.hr.infrastructure.repository.JobJpaRepository;
 import com.cie.hr.infrastructure.repository.ScorecardJpaRepository;
 import com.cie.hr.infrastructure.repository.StatusJpaRepository;
+import com.cie.hr.infrastructure.service.AsyncEmailBatchService;
 import com.cie.hr.infrastructure.service.query.CampaignQuery;
 
 import jakarta.mail.MessagingException;
@@ -60,6 +62,8 @@ public class ScheduledTasks {
     private final ScorecardEventListener scorecardEventListener;
     private final DerogationJpaRepository derogationJpaRepository;
     private final CampaignQuery campaignQuery;
+    private final AsyncEmailBatchService asyncEmailBatchService;
+    private final LoginAttemptService loginAttemptService;
 
     public ScheduledTasks(CampaignJpaRepository campaignJpaRepository,
                           ScorecardJpaRepository scorecardJpaRepository,
@@ -68,7 +72,9 @@ public class ScheduledTasks {
                           JobJpaRepository jobJpaRepository,
                           DerogationJpaRepository derogationJpaRepository,
                           SendCloseCampaignEmailEventListener sendCloseCampaignEmailEventListener,
-                          ScorecardEventListener scorecardEventListener, CampaignQuery campaignQuery) {
+                          ScorecardEventListener scorecardEventListener, CampaignQuery campaignQuery,
+                          AsyncEmailBatchService asyncEmailBatchService,
+                          LoginAttemptService loginAttemptService) {
         this.campaignJpaRepository = campaignJpaRepository;
         this.scorecardJpaRepository = scorecardJpaRepository;
         this.statusJpaRepository = statusJpaRepository;
@@ -78,6 +84,8 @@ public class ScheduledTasks {
         this.scorecardEventListener = scorecardEventListener;
         this.derogationJpaRepository = derogationJpaRepository;
         this.campaignQuery = campaignQuery;
+        this.asyncEmailBatchService = asyncEmailBatchService;
+        this.loginAttemptService = loginAttemptService;
     }
 
     // Scheduled cron every day at 00:00
@@ -291,5 +299,84 @@ public class ScheduledTasks {
         }
         
         LOGGER.info("Scorecard Manager Update completed: {} scorecards updated", updatedCount);
+    }
+
+    /**
+     * Scheduled task to manage user accounts:
+     * 1. Send credentials emails to users who haven't received them yet
+     * 2. Unlock blocked users
+     * Runs every 10 minutes
+     */
+    @Scheduled(cron = "0 */10 * * * ?")
+    public void scheduleTaskForUserAccountManagement() {
+        LOGGER.info("Start scheduler: User Account Management");
+        
+        // Part 1: Send credentials emails to users who haven't received them
+        List<EmployeeEntity> usersWithoutEmails = employeeJpaRepository.findActiveUsersWithoutCredentialsEmail();
+        
+        if (!usersWithoutEmails.isEmpty()) {
+            LOGGER.info("Found {} active users without credentials email", usersWithoutEmails.size());
+            
+            try {
+                asyncEmailBatchService.sendCredentialsEmailsAsync(usersWithoutEmails)
+                    .thenAccept(result -> {
+                        LOGGER.info("Credentials email batch completed: {} sent, {} failed ({}% success rate)",
+                            result.successCount(),
+                            result.failureCount(),
+                            String.format("%.2f", result.successRate()));
+                        
+                        if (result.hasFailures()) {
+                            LOGGER.warn("Failed to send credentials email to: {}", 
+                                String.join(", ", result.failedEmployees()));
+                        }
+                    })
+                    .exceptionally(ex -> {
+                        LOGGER.error("Error during credentials email batch: {}", ex.getMessage(), ex);
+                        return null;
+                    });
+                    
+            } catch (Exception e) {
+                LOGGER.error("Error initiating credentials email batch: {}", e.getMessage(), e);
+            }
+        } else {
+            LOGGER.info("No users without credentials email found");
+        }
+        
+        // Part 2: Unlock blocked users
+        List<EmployeeEntity> lockedUsers = employeeJpaRepository.findLockedUsers();
+        
+        if (!lockedUsers.isEmpty()) {
+            LOGGER.info("Found {} locked users to unlock", lockedUsers.size());
+            int unlockedCount = 0;
+            
+            for (EmployeeEntity user : lockedUsers) {
+                try {
+                    // Clear the login attempt cache
+                    loginAttemptService.evictUserFromLoginAttemptCache(user.getEmail());
+                    
+                    // Unlock the user
+                    user.setIsNotLocked(true);
+                    user.setFailedAttempts(0);
+                    user.setLastFailedAttempt(null);
+                    employeeJpaRepository.save(user);
+                    
+                    unlockedCount++;
+                    LOGGER.info("Unlocked user: {} - {} ({})", 
+                        user.getEmployeeNumber(), 
+                        user.getFullName(), 
+                        user.getEmail());
+                        
+                } catch (Exception e) {
+                    LOGGER.error("Error unlocking user {}: {}", 
+                        user.getEmail(), e.getMessage(), e);
+                }
+            }
+            
+            LOGGER.info("User unlock completed: {} users unlocked", unlockedCount);
+        } else {
+            LOGGER.info("No locked users found");
+        }
+        
+        LOGGER.info("User Account Management scheduler completed");
     }
 }
