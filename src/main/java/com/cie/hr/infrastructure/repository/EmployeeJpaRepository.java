@@ -58,8 +58,9 @@ public interface EmployeeJpaRepository extends JpaRepository<EmployeeEntity, UUI
     /**
      * Find all active employees who haven't received their credentials email
      * Used by scheduled task to send missing credentials emails
+     * SAFETY: Only targets users who have never connected (isFirstConnect = true) to avoid resetting passwords of active users
      */
-    @Query(value = "SELECT e FROM EmployeeEntity e WHERE e.deleted = false AND e.active = true AND (e.sendAccountIdEmail = false OR e.sendAccountIdEmail IS NULL)")
+    @Query(value = "SELECT e FROM EmployeeEntity e WHERE e.deleted = false AND e.active = true AND (e.sendAccountIdEmail = false OR e.sendAccountIdEmail IS NULL) AND e.isFirstConnect = true")
     List<EmployeeEntity> findActiveUsersWithoutCredentialsEmail();
 
     /**
