@@ -319,6 +319,11 @@ public class JobUseCasesAdapter implements JobUseCases {
             if (jobRefreshed.getGrade() != null && jobRefreshed.getEmployeeId() != null) {
                 recalculateChildJobsParent(jobRefreshed.getOrganizationId().getId());
             }
+
+            // Ensure scorecard exists for the employee if added/modified during an active campaign
+            if (jobRefreshed.getEmployeeId() != null) {
+                createScorecardForEmployee(jobRefreshed.getEmployeeId(), jobRefreshed.getGrade().getCode());
+            }
             
             return jobRefreshed.getId();
         }
@@ -539,6 +544,14 @@ public class JobUseCasesAdapter implements JobUseCases {
     private void createScorecardForEmployee(EmployeeDomain employee, String grade) {
         var campaigns = getNotStartedAndRunningCampaign();
         campaigns.forEach(campaign -> {
+            
+            // Check if scorecard already exists to avoid duplicates
+            var existingScorecard = scoreCardRepositoryPort.findByAssessed_IdAndCampaignId(employee.id(), campaign.getId());
+            if (existingScorecard.isPresent()) {
+                LOGGER.info("Scorecard already exists for employee {} in campaign {}", employee.email(), campaign.getName());
+                return;
+            }
+
             if (grade.equals("CE")) {
                 var scorecardForExpert = scorecardExpertTemplateRepositoryPort.findFirstByTypeAndActiveTrue(2);
                 // Création de la fiche de l'employé
