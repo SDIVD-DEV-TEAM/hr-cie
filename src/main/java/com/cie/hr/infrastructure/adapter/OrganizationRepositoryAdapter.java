@@ -105,13 +105,11 @@ public class OrganizationRepositoryAdapter implements OrganizationRepositoryPort
             JobEntity chiefJob = parent.getChiefJob();
             
             // Vérifier que le chef existe, a un employé, et n'est pas le poste exclu
-            if (chiefJob != null && chiefJob.getEmployee() != null) {
-                // Éviter que le poste soit son propre manager
-                if (excludeJobId == null || !chiefJob.getId().equals(excludeJobId)) {
-                    LOGGER.info("Manager trouvé pour l'organisation {}: {} (chef de {})", 
-                        organizationId, chiefJob.getTitle(), parent.getName());
-                    return JobMapper.toJobDomain(chiefJob);
-                }
+            if (chiefJob != null && chiefJob.getEmployee() != null
+                && (excludeJobId == null || !chiefJob.getId().equals(excludeJobId))) {
+                LOGGER.info("Manager trouvé pour l'organisation {}: {} (chef de {})", 
+                    organizationId, chiefJob.getTitle(), parent.getName());
+                return JobMapper.toJobDomain(chiefJob);
             }
             
             // Remonter d'un niveau dans la hiérarchie
