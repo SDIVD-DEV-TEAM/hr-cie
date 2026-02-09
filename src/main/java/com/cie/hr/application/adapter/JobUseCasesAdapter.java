@@ -294,6 +294,11 @@ public class JobUseCasesAdapter implements JobUseCases {
         } else {
             this.jobRepositoryPort.updateAndSave(jobRefreshed);
             
+            // Mettre à jour le manager dans les scorecards de l'employé si le job a changé
+            if (jobRefreshed.getEmployeeId() != null) {
+                updateScorecardManager(jobRefreshed.getEmployeeId(), jobRefreshed);
+            }
+            
             // Recalculer les parent_id des postes dans les organisations enfants
             // si le poste modifié est potentiellement un chef (a un grade et un employé)
             if (jobRefreshed.getGrade() != null && jobRefreshed.getEmployeeId() != null) {
@@ -601,13 +606,18 @@ public class JobUseCasesAdapter implements JobUseCases {
                     job.getId()
                 );
                 
-                if (managerJob != null && managerJob.getEmployeeId() != null) {
-                    scorecard.setManager(managerJob.getEmployeeId());
-                    scoreCardRepositoryPort.updateAndSave(scorecard);
-                    LOGGER.info("Manager mis à jour pour le scorecard de {} : {}", 
-                        employee.email(), managerJob.getEmployeeId().email());
+                // Protection : Ne mettre à jour que si le statut est "0" (Not Started)
+                // Les évaluations commencées (1) ou terminées (2, 3) conservent leur manager
+                if (scorecard.status() != null && "0".equals(scorecard.status().getCode())) {
+                    if (managerJob != null && managerJob.getEmployeeId() != null) {
+                        scorecard.setManager(managerJob.getEmployeeId());
+                        scoreCardRepositoryPort.updateAndSave(scorecard);
+                        LOGGER.info("Manager mis à jour pour le scorecard de {} : {}", 
+                            employee.email(), managerJob.getEmployeeId().email());
+                    }
                 } else {
-                    LOGGER.warn("Aucun manager trouvé pour le scorecard de {}", employee.email());
+                    String statusCode = scorecard.status() != null ? scorecard.status().getCode() : "NULL";
+                    LOGGER.info("Scorecard {} statut {}, modification manager ignorée", scorecard.id(), statusCode);
                 }
             }
         }
@@ -648,6 +658,12 @@ public class JobUseCasesAdapter implements JobUseCases {
                 if (!java.util.Objects.equals(job.getParentId(), newParentId)) {
                     job.setParentId(newParentId);
                     jobRepositoryPort.updateAndSave(job);
+                    
+                    // Propager le changement de manager aux scorecards de l'employé
+                    if (job.getEmployeeId() != null) {
+                        updateScorecardManager(job.getEmployeeId(), job);
+                    }
+                    
                     totalUpdated++;
                     LOGGER.debug("Mis à jour parent_id pour job {} vers {}", job.getId(), newParentId);
                 }
