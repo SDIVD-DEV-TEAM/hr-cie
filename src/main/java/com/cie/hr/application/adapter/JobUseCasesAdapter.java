@@ -140,19 +140,14 @@ public class JobUseCasesAdapter implements JobUseCases {
         if (organization.isEmpty())
             throw new ApplicationException("Cette organisation n'existe pas");
 
-        // Get Parent
-        Organization parent = organization.get().getParent();
-        String finalGrade = grade.get().getCode();
-
-        LOGGER.info("Parent : {}", parent);
-        Job parentJob = null;
-        if (parent != null) {
-            parentJob = organizationRepositoryPort.findChiefJob(parent.getId());
-            // Si l'org parente n'a pas encore de chef, on continue avec parentJob = null
-            if (parentJob == null) {
-                LOGGER.warn("Aucun chef trouvé pour l'organisation parente {}, parent_id sera null", parent.getId());
-            }
+        // Get Parent - utiliser la nouvelle méthode pour trouver le manager
+        // qui remonte la hiérarchie organisationnelle
+        Job parentJob = organizationRepositoryPort.findManagerForJob(organization.get().getId(), null);
+        if (parentJob == null) {
+            LOGGER.warn("Aucun manager trouvé pour l'organisation {}, parent_id sera null", organization.get().getId());
         }
+
+        String finalGrade = grade.get().getCode();
 
         var newJob = Job.newBuilder()
                 .title(command.title())
@@ -260,27 +255,11 @@ public class JobUseCasesAdapter implements JobUseCases {
         if (currentOrganization.isEmpty())
             throw new ApplicationException("Cette organisation n'existe pas");
 
-        Job parentJob = null;
-        Organization parent = currentOrganization.get().getParent();
-        if (parent != null) {
-            parentJob = organizationRepositoryPort.findChiefJob(parent.getId());
-
-            if (parentJob != null && parentJob.getId().equals(command.jobId())) {
-                Organization grandParent = parent.getParent();
-                if (grandParent != null) {
-                    parentJob = organizationRepositoryPort.findChiefJob(grandParent.getId());
-                    // Si pas de chef au niveau N+2, on laisse parentJob = null
-                    if (parentJob == null) {
-                        LOGGER.warn("Aucun chef trouvé pour l'organisation grand-parente, parent_id sera null");
-                    }
-                } else {
-                    parentJob = null;
-                }
-            } else if (parentJob == null) {
-                // Permettre la mise à jour avec parent = null si l'org parente n'a pas de chef
-                LOGGER.warn("Aucun chef trouvé pour l'organisation parente {}, parent_id sera null", parent.getId());
-            }
-            LOGGER.info("Parent job : {}", parentJob);
+        // Utiliser la nouvelle méthode pour trouver le manager
+        // qui remonte la hiérarchie organisationnelle
+        Job parentJob = organizationRepositoryPort.findManagerForJob(currentOrganization.get().getId(), command.jobId());
+        if (parentJob == null) {
+            LOGGER.warn("Aucun manager trouvé pour l'organisation {}, parent_id sera null", currentOrganization.get().getId());
         }
 
         LOGGER.info("Before start creating JobUpate");
@@ -402,6 +381,9 @@ public class JobUseCasesAdapter implements JobUseCases {
             jobDomain.setEmployeeId(employee.get());
             jobRepositoryPort.updateAndSave(jobDomain);
             createScorecardForEmployee(employee.get(), jobDomain.getGrade().getCode());
+            
+            // Mettre à jour le manager dans les scorecards actives de l'employé
+            updateScorecardManager(employee.get(), jobDomain);
             
             // Recalculer les parent_id des postes dans les organisations enfants
             recalculateChildJobsParent(jobDomain.getOrganizationId().getId());
@@ -594,6 +576,40 @@ public class JobUseCasesAdapter implements JobUseCases {
                 }
             }
         });
+    }
+
+    /**
+     * Met à jour le manager des scorecards pour l'employé donné.
+     * Le manager est déterminé en cherchant le chef de l'organisation parente.
+     * 
+     * @param employee L'employé dont les scorecards doivent être mises à jour
+     * @param job Le poste de l'employé
+     */
+    private void updateScorecardManager(EmployeeDomain employee, Job job) {
+        var campaigns = getNotStartedAndRunningCampaign();
+        
+        for (Campaign campaign : campaigns) {
+            var scorecardOpt = scoreCardRepositoryPort.findByAssessed_IdAndCampaignId(employee.id(), campaign.getId());
+            
+            if (scorecardOpt.isPresent()) {
+                ScorecardDomain scorecard = scorecardOpt.get();
+                
+                // Trouver le manager via l'organisation parente
+                Job managerJob = organizationRepositoryPort.findManagerForJob(
+                    job.getOrganizationId().getId(), 
+                    job.getId()
+                );
+                
+                if (managerJob != null && managerJob.getEmployeeId() != null) {
+                    scorecard.setManager(managerJob.getEmployeeId());
+                    scoreCardRepositoryPort.updateAndSave(scorecard);
+                    LOGGER.info("Manager mis à jour pour le scorecard de {} : {}", 
+                        employee.email(), managerJob.getEmployeeId().email());
+                } else {
+                    LOGGER.warn("Aucun manager trouvé pour le scorecard de {}", employee.email());
+                }
+            }
+        }
     }
 
     /**

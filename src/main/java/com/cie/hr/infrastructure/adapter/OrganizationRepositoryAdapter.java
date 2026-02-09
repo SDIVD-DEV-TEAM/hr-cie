@@ -14,6 +14,7 @@ import com.cie.hr.common.exception.ApplicationException;
 import com.cie.hr.domain.entity.Job;
 import com.cie.hr.domain.entity.Organization;
 import com.cie.hr.domain.port.OrganizationRepositoryPort;
+import com.cie.hr.infrastructure.entity.JobEntity;
 import com.cie.hr.infrastructure.entity.OrganizationEntity;
 import com.cie.hr.infrastructure.mapper.JobMapper;
 import com.cie.hr.infrastructure.mapper.OrganizationMapper;
@@ -88,5 +89,39 @@ public class OrganizationRepositoryAdapter implements OrganizationRepositoryPort
         return organizationJpaRepository.findByParentId(parentId).stream()
                 .map(OrganizationMapper::toOrganization)
                 .toList();
+    }
+
+    @Override
+    public Job findManagerForJob(UUID organizationId, UUID excludeJobId) {
+        Optional<OrganizationEntity> organizationOpt = organizationJpaRepository.findById(organizationId);
+        if (organizationOpt.isEmpty()) {
+            return null;
+        }
+        
+        OrganizationEntity currentOrg = organizationOpt.get();
+        OrganizationEntity parent = currentOrg.getParent();
+        
+        // Remonter la hiérarchie jusqu'à trouver un chef avec un employé assigné
+        while (parent != null) {
+            JobEntity chiefJob = parent.getChiefJob();
+            
+            // Vérifier que le chef existe, a un employé, et n'est pas le poste exclu
+            if (chiefJob != null && chiefJob.getEmployee() != null) {
+                // Éviter que le poste soit son propre manager
+                if (excludeJobId == null || !chiefJob.getId().equals(excludeJobId)) {
+                    LOGGER.info("Manager trouvé pour l'organisation {}: {} (chef de {})", 
+                        organizationId, chiefJob.getTitle(), parent.getName());
+                    return JobMapper.toJobDomain(chiefJob);
+                }
+            }
+            
+            // Remonter d'un niveau dans la hiérarchie
+            LOGGER.debug("Pas de chef avec employé pour l'organisation {}, remontée au niveau supérieur", 
+                parent.getName());
+            parent = parent.getParent();
+        }
+        
+        LOGGER.warn("Aucun manager trouvé pour l'organisation {} dans toute la hiérarchie", organizationId);
+        return null;
     }
 }

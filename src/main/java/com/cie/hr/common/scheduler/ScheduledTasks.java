@@ -27,6 +27,7 @@ import com.cie.hr.infrastructure.entity.CampaignEntity;
 import com.cie.hr.infrastructure.entity.DerogationEntity;
 import com.cie.hr.infrastructure.entity.EmployeeEntity;
 import com.cie.hr.infrastructure.entity.JobEntity;
+import com.cie.hr.infrastructure.entity.OrganizationEntity;
 import com.cie.hr.infrastructure.entity.ScorecardEntity;
 import com.cie.hr.infrastructure.entity.StatusEntity;
 import com.cie.hr.infrastructure.mapper.EmployeeMapper;
@@ -266,20 +267,12 @@ public class ScheduledTasks {
                     continue;
                 }
                 
-                // Find the parent job (manager's job)
-                JobEntity parentJob = employeeJob.get().getParent();
-                
-                if (parentJob == null) {
-                    LOGGER.info("No parent job found for employee {} - top of hierarchy", 
-                        scorecard.getAssessed().getEmployeeNumber());
-                    continue;
-                }
-                
-                // Find the employee assigned to the parent job (the manager)
-                EmployeeEntity manager = parentJob.getEmployee();
+                // Remonter la hiérarchie organisationnelle pour trouver le manager
+                EmployeeEntity manager = findManagerByOrganizationHierarchy(employeeJob.get());
                 
                 if (manager == null) {
-                    LOGGER.warn("Parent job {} has no employee assigned", parentJob.getTitle());
+                    LOGGER.info("No manager found for employee {} in organization hierarchy", 
+                        scorecard.getAssessed().getEmployeeNumber());
                     continue;
                 }
                 
@@ -378,5 +371,37 @@ public class ScheduledTasks {
         }
         
         LOGGER.info("User Account Management scheduler completed");
+    }
+
+    /**
+     * Remonte la hiérarchie organisationnelle pour trouver un manager.
+     * Cherche le chef de l'organisation parente qui a un employé assigné.
+     * 
+     * @param job Le poste de l'employé
+     * @return L'employé manager ou null si aucun trouvé
+     */
+    private EmployeeEntity findManagerByOrganizationHierarchy(JobEntity job) {
+        if (job.getOrganization() == null) {
+            return null;
+        }
+        
+        OrganizationEntity parent = job.getOrganization().getParent();
+        
+        // Remonter la hiérarchie jusqu'à trouver un chef avec un employé assigné
+        while (parent != null) {
+            JobEntity chiefJob = parent.getChiefJob();
+            
+            if (chiefJob != null && chiefJob.getEmployee() != null 
+                && !chiefJob.getId().equals(job.getId())) {
+                LOGGER.info("Manager trouvé pour {} : {} (chef de {})", 
+                    job.getTitle(), chiefJob.getEmployee().getFullName(), parent.getName());
+                return chiefJob.getEmployee();
+            }
+            
+            // Remonter d'un niveau
+            parent = parent.getParent();
+        }
+        
+        return null;
     }
 }

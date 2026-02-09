@@ -13,6 +13,17 @@ public interface OrganizationRepositoryPort extends AbstractRepository<Organizat
 
     Job findChiefJob(UUID organizationId);
 
+    /**
+     * Trouve le manager pour un poste en remontant la hiérarchie organisationnelle.
+     * Le manager est le chef de l'organisation parente qui a un employé assigné.
+     * Si l'organisation parente n'a pas de chef avec employé, remonte au niveau supérieur.
+     * 
+     * @param organizationId L'ID de l'organisation du poste
+     * @param excludeJobId L'ID du poste à exclure (pour éviter qu'un poste soit son propre manager)
+     * @return Le Job du manager ou null si aucun trouvé
+     */
+    Job findManagerForJob(UUID organizationId, UUID excludeJobId);
+
     List<Organization> findByParentId(UUID parentId);
 
     Optional<Organization> findByCode(String code);
