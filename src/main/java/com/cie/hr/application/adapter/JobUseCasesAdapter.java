@@ -239,6 +239,7 @@ public class JobUseCasesAdapter implements JobUseCases {
 
         CreateJobCommand job = command.job();
 
+        // Trigger CI rebuild
         // Find employee
         if (job.employeeId() != null) {
             var employee = employeeRepository.findById(job.employeeId());
