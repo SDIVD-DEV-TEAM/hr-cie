@@ -98,8 +98,7 @@ public class OrganizationRepositoryAdapter implements OrganizationRepositoryPort
             return null;
         }
         
-        OrganizationEntity currentOrg = organizationOpt.get();
-        OrganizationEntity parent = currentOrg.getParent();
+        OrganizationEntity parent = organizationOpt.get().getParent();
         
         // Remonter la hiérarchie jusqu'à trouver un chef avec un employé assigné
         while (parent != null) {
