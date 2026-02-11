@@ -1,10 +1,30 @@
 package com.cie.hr.application.adapter;
 
-import com.cie.hr.application.command.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import com.cie.hr.application.command.CloseCampaignCommand;
+import com.cie.hr.application.command.CreateCampaignCommand;
+import com.cie.hr.application.command.DeleteCampaignCommand;
+import com.cie.hr.application.command.OpenCampaignCommand;
+import com.cie.hr.application.command.UpdateCampaignCommand;
 import com.cie.hr.common.exception.ApplicationException;
 import com.cie.hr.common.utils.CheckRHEmployee;
 import com.cie.hr.common.utils.ScorecardUtils;
-import com.cie.hr.domain.entity.*;
+import com.cie.hr.domain.entity.Campaign;
+import com.cie.hr.domain.entity.EmployeeDomain;
+import com.cie.hr.domain.entity.Job;
+import com.cie.hr.domain.entity.Profile;
+import com.cie.hr.domain.entity.ScorecardDomain;
+import com.cie.hr.domain.entity.Status;
 import com.cie.hr.domain.port.CampaignRepositoryPort;
 import com.cie.hr.domain.port.JobRepositoryPort;
 import com.cie.hr.domain.port.ScoreCardRepositoryPort;
@@ -12,12 +32,6 @@ import com.cie.hr.domain.port.StatusRepositoryPort;
 import com.cie.hr.domain.usecase.CampaignUseCases;
 import com.cie.hr.infrastructure.service.query.CampaignQuery;
 import com.fasterxml.uuid.Generators;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
-import java.util.*;
 
 
 @Component
@@ -260,5 +274,94 @@ public class CampaignUseCaseAdapter implements CampaignUseCases {
         }
     }
 
+
+    @Override
+    public int syncMissingScorecards() {
+        if (checkRHEmployee.employeeIsNotRH()) {
+            throw new ApplicationException("Vous n'êtes pas autorisé à effectuer cette opération");
+        }
+
+        // Récupérer les campagnes actives (non démarrée ou en cours)
+        List<String> codes = new ArrayList<>() {{
+            add("0");
+            add("1");
+        }};
+        List<Campaign> activeCampaigns = campaignRepositoryPort.findByStatusCodeIn(codes);
+
+        if (activeCampaigns.isEmpty()) {
+            LOGGER.info("Aucune campagne active trouvée pour la synchronisation des scorecards");
+            return 0;
+        }
+
+        // Récupérer tous les jobs actifs avec un employé assigné
+        List<Job> jobs = jobRepositoryPort.findAllJobsWithEmployees();
+        if (jobs.isEmpty()) {
+            LOGGER.info("Aucun poste avec employé trouvé");
+            return 0;
+        }
+
+        int totalCreated = 0;
+
+        for (Campaign campaign : activeCampaigns) {
+            Optional<Status> status = statusRepositoryPort.findByCode("0");
+            if (status.isEmpty()) {
+                LOGGER.error("Statut 'notStarted' introuvable");
+                continue;
+            }
+
+            List<ScorecardDomain> scorecardsToCreate = new ArrayList<>();
+
+            for (Job job : jobs) {
+                if (job.getEmployeeId() == null) {
+                    continue;
+                }
+
+                EmployeeDomain employee = job.getEmployeeId();
+
+                // Vérifier si un scorecard existe déjà pour cet employé dans cette campagne
+                Optional<ScorecardDomain> existingScorecard = scoreCardRepositoryPort
+                        .findByAssessed_IdAndCampaignId(employee.id(), campaign.getId());
+
+                if (existingScorecard.isPresent()) {
+                    continue;
+                }
+
+                // Créer le scorecard manquant
+                Profile profile = employee.profile();
+                boolean isManager = !profile.getCode().equals("CE");
+
+                ScorecardDomain scorecard = isManager
+                        ? scorecardUtils.createScorecardForManager(job, campaign, employee, status.get())
+                        : scorecardUtils.createScorecardForExpert(job, campaign, employee, status.get());
+
+                if (scorecard != null) {
+                    // Assigner le manager si possible
+                    if (job.getParentId() != null) {
+                        Optional<Job> parentJob = jobRepositoryPort.findById(job.getParentId());
+                        parentJob.ifPresent(parent -> {
+                            if (parent.getEmployeeId() != null) {
+                                scorecard.setManager(parent.getEmployeeId());
+                            }
+                        });
+                    }
+
+                    scorecardsToCreate.add(scorecard);
+                    LOGGER.info("Scorecard manquant créé pour l'employé {} ({}) dans la campagne {}",
+                            employee.firstname() + " " + employee.lastname(),
+                            employee.email(),
+                            campaign.getName());
+                }
+            }
+
+            if (!scorecardsToCreate.isEmpty()) {
+                scoreCardRepositoryPort.saveAll(scorecardsToCreate);
+                totalCreated += scorecardsToCreate.size();
+                LOGGER.info("{} scorecards créés pour la campagne {}", scorecardsToCreate.size(), campaign.getName());
+            }
+        }
+
+        LOGGER.info("Synchronisation terminée : {} scorecards créés au total", totalCreated);
+        return totalCreated;
+    }
 
 }

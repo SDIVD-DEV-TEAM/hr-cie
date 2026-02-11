@@ -12,7 +12,9 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -26,6 +28,7 @@ import com.cie.hr.domain.entity.ScorecardDomain;
 import com.cie.hr.infrastructure.entity.CampaignEntity;
 import com.cie.hr.infrastructure.entity.DerogationEntity;
 import com.cie.hr.infrastructure.entity.EmployeeEntity;
+import com.cie.hr.infrastructure.entity.JobEmbeddedEntity;
 import com.cie.hr.infrastructure.entity.JobEntity;
 import com.cie.hr.infrastructure.entity.OrganizationEntity;
 import com.cie.hr.infrastructure.entity.ScorecardEntity;
@@ -404,4 +407,113 @@ public class ScheduledTasks {
         
         return null;
     }
+
+    /**
+     * Exécuter la synchronisation des scorecards manquants au démarrage de l'application.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady() {
+        LOGGER.info("Application démarrée - Lancement de la synchronisation des scorecards manquants");
+        scheduleTaskForMissingScorecards();
+    }
+
+    /**
+     * Tâche planifiée pour détecter et créer les scorecards manquants.
+     * S'exécute chaque jour à 03:00 AM.
+     * Détecte les employés avec un poste actif mais sans scorecard dans la campagne active.
+     */
+    @Scheduled(cron = "0 0 3 * * ?")
+    public void scheduleTaskForMissingScorecards() {
+        LOGGER.info("Start scheduler: Missing Scorecards Detection");
+        
+        try {
+            Optional<CampaignEntity> activeCampaign = campaignJpaRepository.findFirstByStatusCode("1");
+            
+            if (activeCampaign.isEmpty()) {
+                LOGGER.info("No active campaign found, skipping missing scorecards detection");
+                return;
+            }
+            
+            // Récupérer tous les jobs actifs avec un employé assigné
+            List<JobEntity> jobsWithEmployees = jobJpaRepository.findAllByDeletedFalseAndEmployeeIdIsNotNull();
+            
+            if (jobsWithEmployees.isEmpty()) {
+                LOGGER.info("No active jobs with employees found");
+                return;
+            }
+            
+            Optional<StatusEntity> notStartedStatus = statusJpaRepository.findByCode("0");
+            if (notStartedStatus.isEmpty()) {
+                LOGGER.error("Status 'notStarted' not found");
+                return;
+            }
+            
+            int createdCount = 0;
+            CampaignEntity campaign = activeCampaign.get();
+            
+            for (JobEntity job : jobsWithEmployees) {
+                EmployeeEntity employee = job.getEmployee();
+                if (employee == null || employee.isDeleted()) {
+                    continue;
+                }
+                
+                // Vérifier si un scorecard existe déjà
+                Optional<ScorecardEntity> existingScorecard = scorecardJpaRepository
+                        .findByDeletedFalseAndAssessedIdAndCampaignId(employee.getId(), campaign.getId());
+                
+                if (existingScorecard.isPresent()) {
+                    continue;
+                }
+                
+                // Créer le scorecard manquant
+                boolean isExpert = job.getGrade() != null && "CE".equals(job.getGrade().getCode());
+                
+                ScorecardEntity newScorecard = ScorecardEntity.builder()
+                        .campaign(campaign)
+                        .assessed(employee)
+                        .status(notStartedStatus.get())
+                        .automaticClosed(false)
+                        .build();
+                
+                // Assigner le manager via la hiérarchie organisationnelle
+                EmployeeEntity manager = findManagerByOrganizationHierarchy(job);
+                if (manager != null) {
+                    newScorecard.setManager(manager);
+                }
+                
+                // Copier les infos du job
+                if (job.getOrganization() != null && job.getGrade() != null) {
+                    JobEmbeddedEntity jobEmbedded = new JobEmbeddedEntity(
+                            job.getTitle(),
+                            job.getCode(),
+                            job.getOrganization().getName(),
+                            job.getGrade().getName(),
+                            job.getOrganization().getType() != null 
+                                    ? job.getOrganization().getType().getName() : null
+                    );
+                    newScorecard.setJob(jobEmbedded);
+                }
+                
+                // Créer le template approprié (manager ou expert)
+                if (isExpert) {
+                    // Template expert sera initialisé par défaut
+                    LOGGER.info("Creating expert scorecard for employee {} ({})", 
+                            employee.getFullName(), employee.getEmail());
+                } else {
+                    LOGGER.info("Creating manager scorecard for employee {} ({})", 
+                            employee.getFullName(), employee.getEmail());
+                }
+                
+                newScorecard.setId(com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate());
+                scorecardJpaRepository.save(newScorecard);
+                createdCount++;
+            }
+            
+            LOGGER.info("Missing Scorecards Detection completed: {} scorecards created", createdCount);
+            
+        } catch (Exception e) {
+            LOGGER.error("Error during missing scorecards detection", e);
+        }
+    }
 }
+

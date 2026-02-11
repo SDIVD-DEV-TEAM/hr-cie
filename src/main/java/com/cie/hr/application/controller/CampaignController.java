@@ -1,11 +1,12 @@
 package com.cie.hr.application.controller;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
 
 import org.springframework.http.HttpHeaders;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -128,6 +129,15 @@ public class CampaignController {
         return handleRequestResponse.handleRequest(() -> {
             scheduledTasks.scheduleTaskForCampaignStatusChanges();
             return "✅ Scheduler exécuté avec succès. Les campagnes ont été mises à jour.";
+        });
+    }
+
+    @PostMapping("/sync-scorecards")
+    @Operation(description = "🔄 Synchroniser les scorecards manquants - Détecte et inscrit les employés non inscrits dans la campagne active")
+    ResponseEntity<BaseResponseEntity<Object>> syncMissingScorecards() {
+        return handleRequestResponse.handleRequest(() -> {
+            int created = campaignUseCase.syncMissingScorecards();
+            return "✅ Synchronisation terminée : " + created + " scorecard(s) créé(s) pour les employés manquants.";
         });
     }
 
