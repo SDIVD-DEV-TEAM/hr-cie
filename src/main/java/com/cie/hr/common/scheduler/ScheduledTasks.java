@@ -404,7 +404,7 @@ public class ScheduledTasks {
             return null;
         }
         
-        OrganizationEntity parent = job.getOrganization().getParent();
+        OrganizationEntity parent = job.getOrganization();
         
         // Remonter la hiérarchie jusqu'à trouver un chef avec un employé assigné
         while (parent != null) {
