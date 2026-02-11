@@ -489,88 +489,11 @@ public class ScheduledTasks {
             int createdCount = 0;
             CampaignEntity campaign = activeCampaign.get();
             
+            
             for (JobEntity job : jobsWithEmployees) {
-                EmployeeEntity employee = job.getEmployee();
-                if (employee == null || employee.isDeleted()) {
-                    continue;
+                if (processMissingScorecardForJob(job, campaign, notStartedStatus.get())) {
+                    createdCount++;
                 }
-                
-                // Vérifier si un scorecard existe déjà
-                Optional<ScorecardEntity> existingScorecard = scorecardJpaRepository
-                        .findByDeletedFalseAndAssessedIdAndCampaignId(employee.getId(), campaign.getId());
-                
-                if (existingScorecard.isPresent()) {
-                    continue;
-                }
-                
-                // Créer le scorecard manquant
-                boolean isExpert = job.getGrade() != null && "CE".equals(job.getGrade().getCode());
-                
-                ScorecardEntity newScorecard = ScorecardEntity.builder()
-                        .campaign(campaign)
-                        .assessed(employee)
-                        .status(notStartedStatus.get())
-                        .automaticClosed(false)
-                        .build();
-                
-                // Check if DG
-                if (job.getGrade() != null && ("DG".equalsIgnoreCase(job.getGrade().getCode()) || (job.getGrade().getRank() != null && job.getGrade().getRank() == 0))) {
-                    LOGGER.info("Skipping DG: Scorecard creation for: {}", employee.getEmail());
-                    continue;
-                }
-
-                // Assigner le manager via la hiérarchie organisationnelle
-                EmployeeEntity manager = findManagerByOrganizationHierarchy(job);
-                if (manager == null) {
-                    LOGGER.warn("SKIPPING: No manager found for employee {} ({}) - Cannot create scorecard", 
-                        employee.getFullName(), employee.getEmail());
-                    continue;
-                }
-                newScorecard.setManager(manager);
-                
-                // Copier les infos du job
-                if (job.getOrganization() != null && job.getGrade() != null) {
-                    JobEmbeddedEntity jobEmbedded = new JobEmbeddedEntity(
-                            job.getTitle(),
-                            job.getCode(),
-                            job.getOrganization().getName(),
-                            job.getGrade().getName(),
-                            job.getOrganization().getType() != null 
-                                    ? job.getOrganization().getType().getName() : null
-                    );
-                    newScorecard.setJob(jobEmbedded);
-                }
-                
-                // Créer le template approprié (manager ou expert)
-                if (isExpert) {
-                    Optional<ScorecardExpertTemplateEntity> expertTemplate = scorecardExpertTemplateJpaRepository.findFirstByTypeAndActiveTrue(2);
-                    if (expertTemplate.isPresent()) {
-                       ScorecardForExpert expertForm = getScorecardForExpert(job, expertTemplate.get());
-                       EvaluationScorecardExpert evaluationScorecardExpert = new EvaluationScorecardExpert(campaign.getId(), 0d, notStartedStatus.get().getName(), expertForm);
-                       newScorecard.setExpertTemplate(evaluationScorecardExpert);
-                       LOGGER.info("Creating expert scorecard for employee {} ({})", 
-                            employee.getFullName(), employee.getEmail());
-                    } else {
-                        LOGGER.error("No active expert template found for employee {}", employee.getEmail());
-                        continue; // Skip if no template found
-                    }
-                } else {
-                    Optional<ScorecardManagerTemplateEntity> managerTemplate = scorecardManagerTemplateJpaRepository.findFirstByTypeAndActiveTrue(1);
-                    if (managerTemplate.isPresent()) {
-                        ScorecardForManagerForm managerForm = getScorecardForManagerForm(job, managerTemplate.get());
-                        EvaluationScorecardManager evaluationScorecardManager = new EvaluationScorecardManager(campaign.getId(), 0d, notStartedStatus.get().getName(), managerForm);
-                        newScorecard.setManagerTemplate(evaluationScorecardManager);
-                        LOGGER.info("Creating manager scorecard for employee {} ({})", 
-                            employee.getFullName(), employee.getEmail());
-                    } else {
-                        LOGGER.error("No active manager template found for employee {}", employee.getEmail());
-                        continue; // Skip if no template found
-                    }
-                }
-                
-                newScorecard.setId(com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate());
-                scorecardJpaRepository.save(newScorecard);
-                createdCount++;
             }
             
             LOGGER.info("Missing Scorecards Detection completed: {} scorecards created", createdCount);
@@ -578,6 +501,90 @@ public class ScheduledTasks {
         } catch (Exception e) {
             LOGGER.error("Error during missing scorecards detection", e);
         }
+    }
+
+    private boolean processMissingScorecardForJob(JobEntity job, CampaignEntity campaign, StatusEntity notStartedStatus) {
+        EmployeeEntity employee = job.getEmployee();
+        if (employee == null || employee.isDeleted()) {
+            return false;
+        }
+
+        // Vérifier si un scorecard existe déjà
+        Optional<ScorecardEntity> existingScorecard = scorecardJpaRepository
+                .findByDeletedFalseAndAssessedIdAndCampaignId(employee.getId(), campaign.getId());
+
+        if (existingScorecard.isPresent()) {
+            return false;
+        }
+
+        // Check if DG
+        if (job.getGrade() != null && ("DG".equalsIgnoreCase(job.getGrade().getCode()) || (job.getGrade().getRank() != null && job.getGrade().getRank() == 0))) {
+            LOGGER.info("Skipping DG: Scorecard creation for: {}", employee.getEmail());
+            return false;
+        }
+
+        // Assigner le manager via la hiérarchie organisationnelle
+        EmployeeEntity manager = findManagerByOrganizationHierarchy(job);
+        if (manager == null) {
+            LOGGER.warn("SKIPPING: No manager found for employee {} ({}) - Cannot create scorecard",
+                    employee.getFullName(), employee.getEmail());
+            return false;
+        }
+
+        // Créer le scorecard manquant
+        boolean isExpert = job.getGrade() != null && "CE".equals(job.getGrade().getCode());
+
+        ScorecardEntity newScorecard = ScorecardEntity.builder()
+                .campaign(campaign)
+                .assessed(employee)
+                .status(notStartedStatus)
+                .automaticClosed(false)
+                .build();
+        newScorecard.setManager(manager);
+
+        // Copier les infos du job
+        if (job.getOrganization() != null && job.getGrade() != null) {
+            JobEmbeddedEntity jobEmbedded = new JobEmbeddedEntity(
+                    job.getTitle(),
+                    job.getCode(),
+                    job.getOrganization().getName(),
+                    job.getGrade().getName(),
+                    job.getOrganization().getType() != null
+                            ? job.getOrganization().getType().getName() : null
+            );
+            newScorecard.setJob(jobEmbedded);
+        }
+
+        // Créer le template approprié (manager ou expert)
+        if (isExpert) {
+            Optional<ScorecardExpertTemplateEntity> expertTemplate = scorecardExpertTemplateJpaRepository.findFirstByTypeAndActiveTrue(2);
+            if (expertTemplate.isPresent()) {
+                ScorecardForExpert expertForm = getScorecardForExpert(job, expertTemplate.get());
+                EvaluationScorecardExpert evaluationScorecardExpert = new EvaluationScorecardExpert(campaign.getId(), 0d, notStartedStatus.getName(), expertForm);
+                newScorecard.setExpertTemplate(evaluationScorecardExpert);
+                LOGGER.info("Creating expert scorecard for employee {} ({})",
+                        employee.getFullName(), employee.getEmail());
+            } else {
+                LOGGER.error("No active expert template found for employee {}", employee.getEmail());
+                return false; // Skip if no template found
+            }
+        } else {
+            Optional<ScorecardManagerTemplateEntity> managerTemplate = scorecardManagerTemplateJpaRepository.findFirstByTypeAndActiveTrue(1);
+            if (managerTemplate.isPresent()) {
+                ScorecardForManagerForm managerForm = getScorecardForManagerForm(job, managerTemplate.get());
+                EvaluationScorecardManager evaluationScorecardManager = new EvaluationScorecardManager(campaign.getId(), 0d, notStartedStatus.getName(), managerForm);
+                newScorecard.setManagerTemplate(evaluationScorecardManager);
+                LOGGER.info("Creating manager scorecard for employee {} ({})",
+                        employee.getFullName(), employee.getEmail());
+            } else {
+                LOGGER.error("No active manager template found for employee {}", employee.getEmail());
+                return false; // Skip if no template found
+            }
+        }
+
+        newScorecard.setId(com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate());
+        scorecardJpaRepository.save(newScorecard);
+        return true;
     }
 
     private ScorecardForExpert getScorecardForExpert(JobEntity job, ScorecardExpertTemplateEntity scorecardForExpert) {
