@@ -429,8 +429,29 @@ public class ScheduledTasks {
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-        LOGGER.info("Application démarrée - Lancement de la synchronisation des scorecards manquants");
+        LOGGER.info("Application démarrée - Lancement des tâches initiales");
+        cleanupInvalidScorecards();
         scheduleTaskForMissingScorecards();
+    }
+
+    /**
+     * Nettoyer les scorecards invalides (sans templates) créés par erreur.
+     */
+    public void cleanupInvalidScorecards() {
+        LOGGER.info("Start cleanup: Invalid Scorecards (missing templates)");
+        try {
+            List<ScorecardEntity> invalidScorecards = scorecardJpaRepository.findInvalidScorecards();
+            
+            if (!invalidScorecards.isEmpty()) {
+                LOGGER.info("Found {} invalid scorecards to delete", invalidScorecards.size());
+                scorecardJpaRepository.deleteAllInBatch(invalidScorecards);
+                LOGGER.info("Cleanup completed: {} scorecards deleted", invalidScorecards.size());
+            } else {
+                LOGGER.info("No invalid scorecards found");
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error during invalid scorecards cleanup", e);
+        }
     }
 
     /**

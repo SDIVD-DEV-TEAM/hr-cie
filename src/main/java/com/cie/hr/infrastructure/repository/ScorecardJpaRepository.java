@@ -76,4 +76,7 @@ public interface ScorecardJpaRepository extends JpaRepository<ScorecardEntity, U
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM ScorecardEntity e WHERE e.id = :id")
     Optional<ScorecardEntity> findByIdForWrite(@Param("id") UUID id);
+
+    @Query("SELECT s FROM ScorecardEntity s WHERE s.managerTemplate IS NULL AND s.expertTemplate IS NULL AND s.deleted = false")
+    List<ScorecardEntity> findInvalidScorecards();
 }
