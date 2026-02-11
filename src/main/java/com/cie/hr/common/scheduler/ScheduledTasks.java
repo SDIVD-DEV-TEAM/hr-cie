@@ -32,6 +32,8 @@ import com.cie.hr.infrastructure.entity.JobEmbeddedEntity;
 import com.cie.hr.infrastructure.entity.JobEntity;
 import com.cie.hr.infrastructure.entity.OrganizationEntity;
 import com.cie.hr.infrastructure.entity.ScorecardEntity;
+import com.cie.hr.infrastructure.entity.ScorecardExpertTemplateEntity;
+import com.cie.hr.infrastructure.entity.ScorecardManagerTemplateEntity;
 import com.cie.hr.infrastructure.entity.StatusEntity;
 import com.cie.hr.infrastructure.mapper.EmployeeMapper;
 import com.cie.hr.infrastructure.mapper.ScorecardMapper;
@@ -39,10 +41,18 @@ import com.cie.hr.infrastructure.repository.CampaignJpaRepository;
 import com.cie.hr.infrastructure.repository.DerogationJpaRepository;
 import com.cie.hr.infrastructure.repository.EmployeeJpaRepository;
 import com.cie.hr.infrastructure.repository.JobJpaRepository;
+import com.cie.hr.infrastructure.repository.ScorecardExpertTemplateJpaRepository;
 import com.cie.hr.infrastructure.repository.ScorecardJpaRepository;
+import com.cie.hr.infrastructure.repository.ScorecardManagerTemplateJpaRepository;
 import com.cie.hr.infrastructure.repository.StatusJpaRepository;
 import com.cie.hr.infrastructure.service.AsyncEmailBatchService;
 import com.cie.hr.infrastructure.service.query.CampaignQuery;
+import com.cie.hr.infrastructure.valueobject.EvaluationScorecardExpert;
+import com.cie.hr.infrastructure.valueobject.EvaluationScorecardManager;
+import com.cie.hr.infrastructure.valueobject.FormSpecialLine;
+import com.cie.hr.infrastructure.valueobject.FormSpecialSection;
+import com.cie.hr.infrastructure.valueobject.ScorecardForExpert;
+import com.cie.hr.infrastructure.valueobject.ScorecardForManagerForm;
 
 import jakarta.mail.MessagingException;
 
@@ -68,6 +78,8 @@ public class ScheduledTasks {
     private final CampaignQuery campaignQuery;
     private final AsyncEmailBatchService asyncEmailBatchService;
     private final LoginAttemptService loginAttemptService;
+    private final ScorecardManagerTemplateJpaRepository scorecardManagerTemplateJpaRepository;
+    private final ScorecardExpertTemplateJpaRepository scorecardExpertTemplateJpaRepository;
 
     public ScheduledTasks(CampaignJpaRepository campaignJpaRepository,
                           ScorecardJpaRepository scorecardJpaRepository,
@@ -78,7 +90,9 @@ public class ScheduledTasks {
                           SendCloseCampaignEmailEventListener sendCloseCampaignEmailEventListener,
                           ScorecardEventListener scorecardEventListener, CampaignQuery campaignQuery,
                           AsyncEmailBatchService asyncEmailBatchService,
-                          LoginAttemptService loginAttemptService) {
+                          LoginAttemptService loginAttemptService,
+                          ScorecardManagerTemplateJpaRepository scorecardManagerTemplateJpaRepository,
+                          ScorecardExpertTemplateJpaRepository scorecardExpertTemplateJpaRepository) {
         this.campaignJpaRepository = campaignJpaRepository;
         this.scorecardJpaRepository = scorecardJpaRepository;
         this.statusJpaRepository = statusJpaRepository;
@@ -90,6 +104,8 @@ public class ScheduledTasks {
         this.campaignQuery = campaignQuery;
         this.asyncEmailBatchService = asyncEmailBatchService;
         this.loginAttemptService = loginAttemptService;
+        this.scorecardManagerTemplateJpaRepository = scorecardManagerTemplateJpaRepository;
+        this.scorecardExpertTemplateJpaRepository = scorecardExpertTemplateJpaRepository;
     }
 
     // Scheduled cron every day at 00:00
@@ -496,12 +512,29 @@ public class ScheduledTasks {
                 
                 // Créer le template approprié (manager ou expert)
                 if (isExpert) {
-                    // Template expert sera initialisé par défaut
-                    LOGGER.info("Creating expert scorecard for employee {} ({})", 
+                    Optional<ScorecardExpertTemplateEntity> expertTemplate = scorecardExpertTemplateJpaRepository.findFirstByTypeAndActiveTrue(2);
+                    if (expertTemplate.isPresent()) {
+                       ScorecardForExpert expertForm = getScorecardForExpert(job, expertTemplate.get());
+                       EvaluationScorecardExpert evaluationScorecardExpert = new EvaluationScorecardExpert(campaign.getId(), 0d, notStartedStatus.get().getName(), expertForm);
+                       newScorecard.setExpertTemplate(evaluationScorecardExpert);
+                       LOGGER.info("Creating expert scorecard for employee {} ({})", 
                             employee.getFullName(), employee.getEmail());
+                    } else {
+                        LOGGER.error("No active expert template found for employee {}", employee.getEmail());
+                        continue; // Skip if no template found
+                    }
                 } else {
-                    LOGGER.info("Creating manager scorecard for employee {} ({})", 
+                    Optional<ScorecardManagerTemplateEntity> managerTemplate = scorecardManagerTemplateJpaRepository.findFirstByTypeAndActiveTrue(1);
+                    if (managerTemplate.isPresent()) {
+                        ScorecardForManagerForm managerForm = getScorecardForManagerForm(job, managerTemplate.get());
+                        EvaluationScorecardManager evaluationScorecardManager = new EvaluationScorecardManager(campaign.getId(), 0d, notStartedStatus.get().getName(), managerForm);
+                        newScorecard.setManagerTemplate(evaluationScorecardManager);
+                        LOGGER.info("Creating manager scorecard for employee {} ({})", 
                             employee.getFullName(), employee.getEmail());
+                    } else {
+                        LOGGER.error("No active manager template found for employee {}", employee.getEmail());
+                        continue; // Skip if no template found
+                    }
                 }
                 
                 newScorecard.setId(com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate());
@@ -514,6 +547,30 @@ public class ScheduledTasks {
         } catch (Exception e) {
             LOGGER.error("Error during missing scorecards detection", e);
         }
+    }
+
+    private ScorecardForExpert getScorecardForExpert(JobEntity job, ScorecardExpertTemplateEntity scorecardForExpert) {
+        ScorecardForExpert expertForm = scorecardForExpert.getValues();
+        FormSpecialSection specialSection = expertForm.sectionB();
+
+        if (job.getJobTemplate() != null) {
+            List<FormSpecialLine> jobLines = job.getJobTemplate().lines();
+            FormSpecialSection section = new FormSpecialSection(specialSection.title(), specialSection.note(), specialSection.type(), jobLines, specialSection.coefficient(), false);
+            expertForm = new ScorecardForExpert(expertForm.sectionA(), section, expertForm.sectionC(), expertForm.sectionD());
+        }
+        return expertForm;
+    }
+
+    private ScorecardForManagerForm getScorecardForManagerForm(JobEntity job, ScorecardManagerTemplateEntity scorecardTemplate) {
+        ScorecardForManagerForm formManager = scorecardTemplate.getValues();
+        FormSpecialSection specialSection = formManager.sectionD();
+
+        if (job.getJobTemplate() != null) {
+            List<FormSpecialLine> jobLines = job.getJobTemplate().lines();
+            FormSpecialSection section = new FormSpecialSection(specialSection.title(), specialSection.note(), specialSection.type(), jobLines, specialSection.coefficient(), false);
+            formManager = new ScorecardForManagerForm(formManager.sectionA(), formManager.sectionB(), formManager.sectionC(), section, formManager.sectionE(), formManager.sectionF());
+        }
+        return formManager;
     }
 }
 
