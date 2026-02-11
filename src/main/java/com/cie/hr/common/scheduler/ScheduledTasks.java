@@ -431,7 +431,59 @@ public class ScheduledTasks {
     public void onApplicationReady() {
         LOGGER.info("Application démarrée - Lancement des tâches initiales");
         cleanupInvalidScorecards();
+        forceEnrollSpecificEmployees();
         scheduleTaskForMissingScorecards();
+    }
+
+    /**
+     * Force enrollment for specific employees requested by support.
+     * Runs once on startup.
+     */
+    private void forceEnrollSpecificEmployees() {
+        LOGGER.info("Starting Forced Enrollment for specific employees...");
+        List<String> specificEmails = List.of("adaka@cie.ci", "deliaka@cie.ci");
+        
+        try {
+            Optional<CampaignEntity> activeCampaign = campaignJpaRepository.findFirstByStatusCode("1");
+            if (activeCampaign.isEmpty()) {
+                LOGGER.warn("Forced Enrollment Skipped: No active campaign found.");
+                return;
+            }
+            
+            Optional<StatusEntity> notStartedStatus = statusJpaRepository.findByCode("0");
+            if (notStartedStatus.isEmpty()) {
+                LOGGER.error("Forced Enrollment Failed: Status 'notStarted' not found.");
+                return;
+            }
+
+            for (String email : specificEmails) {
+                LOGGER.info("Processing forced enrollment for: {}", email);
+                Optional<EmployeeEntity> employeeOpt = employeeJpaRepository.findByEmailAndDeletedFalse(email);
+                
+                if (employeeOpt.isEmpty()) {
+                    LOGGER.warn("Employee not found: {}", email);
+                    continue;
+                }
+                
+                EmployeeEntity employee = employeeOpt.get();
+                // Find active job (most recent)
+                Optional<JobEntity> jobOpt = jobJpaRepository.findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(employee.getId());
+                
+                if (jobOpt.isEmpty()) {
+                    LOGGER.warn("No active job found for employee: {}", email);
+                    continue;
+                }
+                
+                boolean created = processMissingScorecardForJob(jobOpt.get(), activeCampaign.get(), notStartedStatus.get());
+                if (created) {
+                    LOGGER.info("SUCCESS: Forced enrollment complete for {}", email);
+                } else {
+                    LOGGER.warn("SKIPPED/FAILED: Forced enrollment for {} (Already exists or Missing Manager/Template/DG Exclusion)", email);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error during forced enrollment", e);
+        }
     }
 
 
