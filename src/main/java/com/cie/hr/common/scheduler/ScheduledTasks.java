@@ -431,119 +431,9 @@ public class ScheduledTasks {
     public void onApplicationReady() {
         LOGGER.info("Application démarrée - Lancement des tâches initiales");
         cleanupInvalidScorecards();
-        forceEnrollSpecificEmployees();
         scheduleTaskForMissingScorecards();
     }
 
-    /**
-     * Tâche ponctuelle demandée pour forcer l'intégration de 3 employés spécifiques.
-     * Vérifie pourquoi ils sont bloqués et force leur inscription si possible.
-     */
-    public void forceEnrollSpecificEmployees() {
-        LOGGER.info(">>> Start Forced Enrollment for specific users");
-        List<String> targetEmails = List.of("tgnabro@cie.ci", "itoure@cie.ci", "caissi@cie.ci");
-        
-        try {
-            Optional<CampaignEntity> activeCampaign = campaignJpaRepository.findFirstByStatusCode("1");
-            if (activeCampaign.isEmpty()) {
-                LOGGER.info("Validation impossible: Pas de campagne active");
-                return;
-            }
-            
-            CampaignEntity campaign = activeCampaign.get();
-            Optional<StatusEntity> notStartedStatus = statusJpaRepository.findByCode("0");
-             if (notStartedStatus.isEmpty()) return;
-
-            for (String email : targetEmails) {
-                LOGGER.info("Checking employee: {}", email);
-                
-                // 1. Check Employee
-                Optional<EmployeeEntity> employeeOpt = employeeJpaRepository.findByEmailAndDeletedFalse(email);
-                if (employeeOpt.isEmpty()) {
-                    LOGGER.error("FAIL: Employee not found or deleted: {}", email);
-                    continue;
-                }
-                EmployeeEntity employee = employeeOpt.get();
-                
-                // 2. Check Job
-                Optional<JobEntity> jobOpt = jobJpaRepository.findFirstByEmployeeIdAndDeletedFalseOrderByCreatedDesc(employee.getId());
-                if (jobOpt.isEmpty()) {
-                    LOGGER.error("FAIL: No active job found for employee: {}", email);
-                    continue;
-                }
-                JobEntity job = jobOpt.get();
-                
-                // 3. Check existing scorecard
-                Optional<ScorecardEntity> existingScorecard = scorecardJpaRepository
-                        .findByDeletedFalseAndAssessedIdAndCampaignId(employee.getId(), campaign.getId());
-                
-                if (existingScorecard.isPresent()) {
-                    LOGGER.info("SKIP: Scorecard already exists for: {}", email);
-                    continue;
-                }
-                
-                // 4. Create Scorecard
-                try {
-                    boolean isExpert = job.getGrade() != null && "CE".equals(job.getGrade().getCode());
-                    
-                    ScorecardEntity newScorecard = ScorecardEntity.builder()
-                            .campaign(campaign)
-                            .assessed(employee)
-                            .status(notStartedStatus.get())
-                            .automaticClosed(false)
-                            .build();
-                    
-                    // Assign Manager
-                    EmployeeEntity manager = findManagerByOrganizationHierarchy(job);
-                    if (manager != null) {
-                        newScorecard.setManager(manager);
-                    } else {
-                        LOGGER.warn("WARNING: No manager found for {}", email);
-                    }
-                    
-                    // Assign Job
-                    if (job.getOrganization() != null && job.getGrade() != null) {
-                        JobEmbeddedEntity jobEmbedded = new JobEmbeddedEntity(
-                                job.getTitle(),
-                                job.getCode(),
-                                job.getOrganization().getName(),
-                                job.getGrade().getName(),
-                                job.getOrganization().getType() != null 
-                                        ? job.getOrganization().getType().getName() : null
-                        );
-                        newScorecard.setJob(jobEmbedded);
-                    }
-                    
-                    // Assign Template
-                    if (isExpert) {
-                        Optional<ScorecardExpertTemplateEntity> expertTemplate = scorecardExpertTemplateJpaRepository.findFirstByTypeAndActiveTrue(2);
-                        if (expertTemplate.isPresent()) {
-                           ScorecardForExpert expertForm = getScorecardForExpert(job, expertTemplate.get());
-                           EvaluationScorecardExpert evaluationScorecardExpert = new EvaluationScorecardExpert(campaign.getId(), 0d, notStartedStatus.get().getName(), expertForm);
-                           newScorecard.setExpertTemplate(evaluationScorecardExpert);
-                        }
-                    } else {
-                        Optional<ScorecardManagerTemplateEntity> managerTemplate = scorecardManagerTemplateJpaRepository.findFirstByTypeAndActiveTrue(1);
-                        if (managerTemplate.isPresent()) {
-                            ScorecardForManagerForm managerForm = getScorecardForManagerForm(job, managerTemplate.get());
-                            EvaluationScorecardManager evaluationScorecardManager = new EvaluationScorecardManager(campaign.getId(), 0d, notStartedStatus.get().getName(), managerForm);
-                            newScorecard.setManagerTemplate(evaluationScorecardManager);
-                        }
-                    }
-                    
-                    newScorecard.setId(com.fasterxml.uuid.Generators.timeBasedEpochGenerator().generate());
-                    scorecardJpaRepository.save(newScorecard);
-                    LOGGER.info("SUCCESS: Forced enrollment completed for {}", email);
-                    
-                } catch (Exception e) {
-                    LOGGER.error("FAIL: Error creating scorecard for " + email, e);
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error during force enrollment", e);
-        }
-        LOGGER.info("<<< End Forced Enrollment");
-    }
 
     /**
      * Nettoyer les scorecards invalides (sans templates) créés par erreur.
@@ -623,11 +513,20 @@ public class ScheduledTasks {
                         .automaticClosed(false)
                         .build();
                 
+                // Check if DG
+                if (job.getGrade() != null && ("DG".equalsIgnoreCase(job.getGrade().getCode()) || (job.getGrade().getRank() != null && job.getGrade().getRank() == 0))) {
+                    LOGGER.info("Skipping DG: Scorecard creation for: {}", employee.getEmail());
+                    continue;
+                }
+
                 // Assigner le manager via la hiérarchie organisationnelle
                 EmployeeEntity manager = findManagerByOrganizationHierarchy(job);
-                if (manager != null) {
-                    newScorecard.setManager(manager);
+                if (manager == null) {
+                    LOGGER.warn("SKIPPING: No manager found for employee {} ({}) - Cannot create scorecard", 
+                        employee.getFullName(), employee.getEmail());
+                    continue;
                 }
+                newScorecard.setManager(manager);
                 
                 // Copier les infos du job
                 if (job.getOrganization() != null && job.getGrade() != null) {
