@@ -518,7 +518,7 @@ public class ScheduledTasks {
         }
 
         // Check if DG
-        if (job.getGrade() != null && ("DG".equalsIgnoreCase(job.getGrade().getCode()) || (job.getGrade().getRank() != null && job.getGrade().getRank() == 0))) {
+        if (job.getGrade() != null && ("DG".equalsIgnoreCase(job.getGrade().getCode()) || job.getGrade().getRank() != null && job.getGrade().getRank() == 0)) {
             LOGGER.info("Skipping DG: Scorecard creation for: {}", employee.getEmail());
             return false;
         }
